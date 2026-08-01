@@ -1,0 +1,1 @@
+A dedicated baseline branch will be created from `main`. No existing branch will be force-updated. The branch will contain the exact supplied Build and no functional modifications.
