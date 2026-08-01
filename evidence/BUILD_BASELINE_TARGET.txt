@@ -1,0 +1,4 @@
+agent/site-build-baseline-20260802
+base=main
+mode=byte-exact
+production=false
