@@ -1,0 +1,15 @@
+{
+  "assets/index-ClUC_4GS.js": {"size": 534849, "sha256": "41b99beb8730324da1c3903f5b985f19c5df646cc1e8ea7595f2df3c487d3302", "git_blob_sha1": "f7c454aa29cab0e4d9406b418fbd09b1294816a4"},
+  "assets/index-SCz4HByz.css": {"size": 101694, "sha256": "71845a99586d5b1ddb46dac914e7ca0939ad01062e18166831231f1409d876d1", "git_blob_sha1": "12e578c413a2ad037900a056baed3c347c30e78a"},
+  "before-after.jpg": {"size": 96679, "sha256": "efe2db3c0def0eb8f41a5770f2b612a2bd1fccb846d190c2f6e6068908561254", "git_blob_sha1": "a8a4e47f610f389c00f632a87f67e2e39e459413"},
+  "clinic-interior.jpg": {"size": 135163, "sha256": "42aff5eb0097a0f7a5c544fcb63fab9e18a20aed37732059244d278e40b192d7", "git_blob_sha1": "9366cd9bb353148e7f3a69a39ee684eaece20ee2"},
+  "doctor-portrait.jpg": {"size": 64562, "sha256": "13144bfe36e673d410c78ecea067d9e7332ac928bfbfa168fe4050d5c87f9a1f", "git_blob_sha1": "41abb85b77c520025a4a367bdb0e69ee9d040ba8"},
+  "hero-bg.jpg": {"size": 134696, "sha256": "a281460cb80627da8225a41d02b53ed8271fb9e96424b5ad5ac9bf134ad0d7ed", "git_blob_sha1": "ab7eccd41caff47efe6ee0de02af165d7ace5ede"},
+  "index.html": {"size": 3540, "sha256": "2cd475cf1834622b19c0a6b527d38cc2ca3fab0a60d246cb4dad05e1d0643a1c", "git_blob_sha1": "4d557e0e0e773cacadb27638dee7afe4e4c27201"},
+  "service-implant.jpg": {"size": 79519, "sha256": "5fd55569bce60262e1efc54dd2765f91850314dece95e91722c2f37090354473", "git_blob_sha1": "6b561f5b9c26aa377461755d0151a5ca8a6335d0"},
+  "service-orthodontics.jpg": {"size": 75108, "sha256": "d4e84d40e290dfd0255502bdc184e8a67dd89bca21648e49e436a5377516f653", "git_blob_sha1": "c4a9d710b2c9b3cdcc48cc84927cefd9c134e4a7"},
+  "service-pediatric.jpg": {"size": 113152, "sha256": "7077d4a55bb184b915fb26776d688423a9d9074802c4b1bd873e89b1a2ed8dd4", "git_blob_sha1": "b316fbe924af88009fda0c1fc5e19754b4e3cc69"},
+  "service-rootcanal.jpg": {"size": 59520, "sha256": "5e542c47458d8ad879b71c1eecf784ad9025f1e24856fb1deb73f5c3ce64f44a", "git_blob_sha1": "5fced0e54386fdf4fbe24e957de5aaad439b6e41"},
+  "service-veneer.jpg": {"size": 50419, "sha256": "43adf78bb84eff26ca3855c8930ed14068e8f90a9b71b936668acd07b883600d", "git_blob_sha1": "4c7afc6380721fca1ddac70cdfa524e6fc5317d2"},
+  "service-whitening.jpg": {"size": 72927, "sha256": "75ace878b34188432fc330c4dd4c1bd405a8f7328f6474444016ade57b34843a", "git_blob_sha1": "b47f3d4d65d5bb7d9b2ce24f017ccccf50d20690"}
+}
