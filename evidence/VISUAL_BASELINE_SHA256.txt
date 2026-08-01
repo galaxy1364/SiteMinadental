@@ -1,0 +1,10 @@
+# Visual baseline evidence — SHA-256
+# Existing screenshots captured during the prior read-only audit.
+# These hashes protect the approved appearance and must be used as visual-regression references after source recovery.
+
+749f247e85868656e8ce7b0d484720d1e73223a811fb01713c6962d126d3b0c1  baseline/desktop.png  (1440x13293)
+13ae21e6d9bc3d49adf6499c15c59d160f430c18bfafd810552de8a9ebf72dd2  baseline/mobile.png   (390x22560)
+ebd0e15847fff4446b1495b489e52c07477f68916e61570432f9a9d04314bb8f  scrolled/desktop.png  (1440x13293)
+38db502342f3e422f6f2fa76e5e8ee677ab4276fbb9996e6fc9f0bcdcce9bd93  scrolled/mobile.png   (390x22560)
+
+Note: an additional runtime attempt on 2026-08-02 was blocked by the execution environment's administrator policy for localhost/file URLs. It was not treated as application failure and did not replace these existing baseline images.
