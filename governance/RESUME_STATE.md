@@ -2,30 +2,40 @@
 
 ## Resume point
 
-`RP-04-STATIC-AUDIT-COMPLETE-SOURCE-RECOVERY-PENDING`
+`RP-08-CLAIMS-AUDITED-ASSET-TRANSFER-AND-SOURCE-PENDING`
 
 ## Continue from here
 
 1. Work only in `galaxy1364/SiteMinadental`.
-2. Do not modify `main` or deploy production.
-3. Continue on Draft PR #3 and branch `agent/site-baseline-audit-20260802` for evidence/source recovery only.
-4. Treat the supplied ZIP as compiled evidence, not maintainable source.
-5. Preserve the recorded build and visual SHA-256 baselines.
-6. Recover/export the 25 referenced TypeScript/React source files plus package manifest and lockfile.
-7. Create a preview-only Git-backed deployment after source recovery.
-8. Run visual regression at desktop and mobile sizes; reject every unapproved visual difference.
-9. Implement appointment/contact persistence with server-side validation, idempotency, receipt ID, audit event and monitoring.
-10. Connect MinaDent only through a versioned authenticated API contract.
+2. Do not modify `main` or deploy Production.
+3. Keep PR #3 for audit/governance evidence.
+4. Keep PR #4 Draft, incomplete and non-deployable.
+5. Continue byte-exact transfer on branch `agent/site-build-baseline-20260802`.
+6. Transfer only the remaining original files: one JavaScript Bundle, one CSS file and ten JPG assets.
+7. After each transfer, compare the returned Git blob SHA with `evidence/BYTE_EXACT_BUILD_MANIFEST.json`; reject any mismatch.
+8. Do not patch, reformat, optimize, rename, recompress or regenerate the Build files.
+9. Do not create a Preview until all 13 files are present and verified.
+10. Maintainable feature development still requires original `src/`, package manifest and lockfile.
+11. Before publishing content, resolve the orthodontics contradiction and obtain evidence for medical/commercial claims.
+12. Connect forms, Instagram, Maps, AI, advertising and MinaDent only through verified ownership and versioned contracts.
 
-## Immediate blocker evidence
+## Verified state
 
-- Repository source is absent.
+- `main` is unchanged.
+- `index.html` is transferred byte-exact and verified by Git blob SHA.
+- Source-recovery search found no matching maintainable public-site source in connected repositories.
+- Existing app repositories were excluded to prevent project mixing.
+- Fake-success forms, map-coordinate conflict, missing PWA lifecycle and unsupported claims are documented.
+
+## Immediate blockers
+
+- Original source and lockfile are absent.
+- Twelve exact Build assets remain to be transferred.
 - Vercel project is absent in the connected account.
-- Both forms display success without a verified persistence endpoint.
-- JSON-LD and embedded-map coordinates conflict by approximately 13.1 km.
-- Instagram, Google Business Profile, Maps, domain, CRM and MinaDent credentials/contracts have not been supplied.
-- PWA installation/update infrastructure is absent.
+- Domain/DNS/TLS ownership is not verified.
+- Instagram, Google Business Profile, Maps, CRM and MinaDent authorization/contracts are absent.
+- Published claims lack attached evidence.
 
 ## Definition of safe continuation
 
-Feature implementation becomes safe only after original source and preview deployment are proven. Until then, changes to minified assets, dependencies, routes, schemas, backend or production remain forbidden.
+A Preview becomes safe only after the byte-exact baseline branch is complete and all blob hashes match. Feature implementation becomes safe only after maintainable source is recovered. Until then, minified patches, dependencies, routes, schemas, backend and Production remain forbidden.
