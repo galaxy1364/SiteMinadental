@@ -1,0 +1,1 @@
+Ready to create content-addressed tree from immutable blob IDs.
