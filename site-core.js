@@ -3,6 +3,60 @@
 
   const STORAGE_KEY = 'mina_dental_attribution_v1';
   const PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'wbraid', 'gbraid', 'fbclid'];
+  const INSTAGRAM_URL = 'https://www.instagram.com/dr.mina.mazandarani/';
+  const MAP_URL = 'https://maps.app.goo.gl/UQE1itDfMgwCGxMu5?g_st=ic';
+
+  const loadContentUpgrade = () => {
+    if (document.querySelector('script[data-mina-content-upgrade]')) return;
+    const script = document.createElement('script');
+    script.src = './content-upgrade.js';
+    script.defer = true;
+    script.dataset.minaContentUpgrade = 'true';
+    document.head.appendChild(script);
+  };
+
+  const applySearchIdentity = () => {
+    const description = 'کلینیک دندانپزشکی دکتر مینا مازندرانی در منطقه ۲۱ تهران؛ همان مرکز شناخته‌شده با نام پیشین دندانپزشکی صدف. اطلاعات خدمات، موقعیت رسمی و درخواست نوبت از کانال‌های تأییدشده.';
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.content = description;
+
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Dentist',
+      '@id': `${location.origin}${location.pathname}#verified-identity`,
+      name: 'کلینیک دندانپزشکی دکتر مینا مازندرانی',
+      alternateName: [
+        'دندانپزشکی صدف',
+        'کلینیک دندانپزشکی صدف',
+        'دندانپزشکی دکتر مینا مازندرانی',
+        'Mina Mazandarani Dental Clinic',
+        'Sadaf Dental Clinic Tehran'
+      ],
+      description,
+      url: `${location.origin}${location.pathname}`,
+      telephone: '+989105306142',
+      hasMap: MAP_URL,
+      sameAs: [INSTAGRAM_URL, MAP_URL],
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'بلوار گل‌ها',
+        addressLocality: 'تهران',
+        addressRegion: 'منطقه ۲۱، استان تهران',
+        addressCountry: 'IR'
+      },
+      areaServed: ['منطقه ۲۱ تهران', 'غرب تهران', 'تهران'],
+      knowsLanguage: ['fa']
+    };
+
+    let node = document.getElementById('mina-verified-identity-schema');
+    if (!node) {
+      node = document.createElement('script');
+      node.id = 'mina-verified-identity-schema';
+      node.type = 'application/ld+json';
+      document.head.appendChild(node);
+    }
+    node.textContent = JSON.stringify(schema);
+  };
 
   const readAttribution = () => {
     const params = new URLSearchParams(location.search);
@@ -62,6 +116,21 @@
   }));
   window.addEventListener('mina:pwa-installed', () => emit('pwa_installed'));
 
-  window.minaDental = Object.freeze({ emit, attribution });
+  applySearchIdentity();
+  loadContentUpgrade();
+
+  window.minaDental = Object.freeze({
+    emit,
+    attribution,
+    channels: Object.freeze({
+      instagram: { status: 'active', url: INSTAGRAM_URL },
+      whatsapp: { status: 'active', phone: '+989105306142' },
+      googleMaps: { status: 'active', url: MAP_URL },
+      bale: { status: 'credentials_required' },
+      eitaa: { status: 'credentials_required' },
+      rubika: { status: 'credentials_required' }
+    })
+  });
+
   emit('page_view');
 })();
