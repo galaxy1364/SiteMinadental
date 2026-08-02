@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-03T00:43:00+03:30",
+  "articles": [
+    {
+      "slug": "implant-consultation-guide",
+      "title": "راهنمای مراجعه برای مشاوره ایمپلنت دندان",
+      "summary": "آشنایی با مراحل ارزیابی، تصویربرداری، بررسی استخوان و طراحی درمان پیش از تصمیم‌گیری برای ایمپلنت.",
+      "image": "service-implant.jpg",
+      "category": "ایمپلنت",
+      "medicalReviewRequired": true,
+      "status": "draft-reviewed-content-needed"
+    },
+    {
+      "slug": "root-canal-warning-signs",
+      "title": "چه زمانی دندان به بررسی درمان ریشه نیاز دارد؟",
+      "summary": "درد مداوم، حساسیت طولانی، تورم یا تغییر رنگ می‌تواند نیازمند بررسی تخصصی باشد؛ تشخیص فقط پس از معاینه انجام می‌شود.",
+      "image": "service-rootcanal.jpg",
+      "category": "درمان ریشه",
+      "medicalReviewRequired": true,
+      "status": "draft-reviewed-content-needed"
+    },
+    {
+      "slug": "child-first-dental-visit",
+      "title": "چطور اولین مراجعه دندانپزشکی کودک آرام‌تر باشد؟",
+      "summary": "آماده‌سازی درست کودک، انتخاب زمان مناسب و پرهیز از انتقال اضطراب می‌تواند تجربه مراجعه را بهتر کند.",
+      "image": "service-pediatric.jpg",
+      "category": "اطفال",
+      "medicalReviewRequired": true,
+      "status": "draft-reviewed-content-needed"
+    },
+    {
+      "slug": "cosmetic-dentistry-consultation",
+      "title": "مشاوره زیبایی دندان؛ از بررسی لبخند تا انتخاب درمان",
+      "summary": "انتخاب بین بلیچینگ، کامپوزیت یا روکش باید بر اساس وضعیت واقعی دندان‌ها و اهداف درمانی انجام شود.",
+      "image": "service-veneer.jpg",
+      "category": "زیبایی",
+      "medicalReviewRequired": true,
+      "status": "draft-reviewed-content-needed"
+    }
+  ],
+  "gallery": [
+    {"src":"clinic-interior.jpg","alt":"فضای کلینیک دندانپزشکی دکتر مینا مازندرانی","kind":"clinic","verified":true},
+    {"src":"doctor-portrait.jpg","alt":"دکتر مینا مازندرانی","kind":"doctor","verified":true},
+    {"src":"before-after.jpg","alt":"نمونه نمایشی قبل و بعد؛ انتشار نهایی منوط به رضایت و تأیید بیمار","kind":"case","verified":false},
+    {"src":"service-implant.jpg","alt":"تصویر خدمات ایمپلنت دندان","kind":"service","verified":true},
+    {"src":"service-rootcanal.jpg","alt":"تصویر خدمات درمان ریشه","kind":"service","verified":true},
+    {"src":"service-pediatric.jpg","alt":"تصویر خدمات دندانپزشکی اطفال","kind":"service","verified":true}
+  ],
+  "social": {
+    "instagram": "https://www.instagram.com/dr.mina.mazandarani/",
+    "instagramImportMode": "official-api-or-owner-upload-only"
+  }
+}
