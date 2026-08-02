@@ -2,8 +2,10 @@
   'use strict';
 
   const BASE = '/SiteMinadental/';
-  const LOCATION_TEXT = 'استان تهران، تهران، منطقه ۲۱، بلوار گل‌ها';
-  const MAP_URL = 'https://maps.app.goo.gl/UQE1itDfMgwCGxMu5?g_st=ic';
+  const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
+  const PLACE_QUERY = 'دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول، تهران';
+  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACE_QUERY)}`;
+  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(PLACE_QUERY)}&output=embed&hl=fa`;
   let deferredInstallPrompt = null;
   let installAttempted = false;
   let refreshing = false;
@@ -15,21 +17,34 @@
     document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href') || '';
       const label = (anchor.textContent || '').trim();
-      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href) || /مسیریابی|نقشه|لوکیشن|آدرس/i.test(label)) {
+      if (/google.*maps|maps\.google|maps\.app\.goo\.gl/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|مسیریابی|باز کردن در Maps/i.test(label)) {
         anchor.href = MAP_URL;
         anchor.target = '_blank';
         anchor.rel = 'noopener noreferrer';
+        anchor.setAttribute('aria-label', 'مشاهده موقعیت دقیق دندانپزشکی تخصصی صدف در گوگل مپ');
+      }
+    });
+
+    document.querySelectorAll('iframe').forEach(frame => {
+      const src = frame.getAttribute('src') || '';
+      const title = frame.getAttribute('title') || '';
+      if (/google.*maps|maps\.google|map/i.test(src) || /نقشه|map/i.test(title)) {
+        if (frame.src !== MAP_EMBED_URL) frame.src = MAP_EMBED_URL;
+        frame.title = 'موقعیت دقیق دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول';
+        frame.loading = 'lazy';
+        frame.referrerPolicy = 'no-referrer-when-downgrade';
       }
     });
 
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
-      if (!node.nodeValue || !/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J/.test(node.nodeValue)) continue;
+      if (!node.nodeValue || !/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J|چیتگر شمالی/.test(node.nodeValue)) continue;
       node.nodeValue = node.nodeValue
         .replace(/خیابان امیرکبیر،\s*گلها،\s*نبش یاس/g, LOCATION_TEXT)
         .replace(/استان تهران،\s*تهران،\s*منطقه ۲۱،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
         .replace(/بلوار گل‌ها،\s*Plus Code:\s*P6XX\+G5J/g, LOCATION_TEXT)
+        .replace(/چیتگر(?:-e)?\s*شمالی/gi, 'بلوار گل‌ها، یاس اول')
         .replace(/منطقه\s*۲۲/g, 'منطقه ۲۱')
         .replace(/منطقه\s*22/g, 'منطقه ۲۱');
     }
