@@ -1,0 +1,47 @@
+name: Deploy exact Kimi site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact site bytes
+        uses: actions/checkout@v4
+
+      - name: Verify required runtime files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f index.html
+          test -f assets/index-ClUC_4GS.js
+          test -f assets/index-SCz4HByz.css
+          test -f hero-bg.jpg
+          test -f doctor-portrait.jpg
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload exact static site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
