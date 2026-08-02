@@ -4,8 +4,8 @@ const crypto = require('node:crypto');
 
 function configuration() {
   return {
-    webhookUrl: process.env.MINADENT_WEBHOOK_URL || '',
-    webhookSecret: process.env.MINADENT_WEBHOOK_SECRET || '',
+    webhookUrl: process.env.KIMI_SITE_WEBHOOK_URL || '',
+    webhookSecret: process.env.KIMI_SITE_WEBHOOK_SECRET || '',
   };
 }
 
@@ -26,7 +26,7 @@ async function forwardEvent(type, payload, idempotencyKey, requestId) {
     request_id: requestId,
     idempotency_key: idempotencyKey,
     occurred_at: new Date().toISOString(),
-    source: 'siteminadental',
+    source: 'kimi-dental-site',
     type,
     payload,
   };
@@ -41,8 +41,8 @@ async function forwardEvent(type, payload, idempotencyKey, requestId) {
       headers: {
         'Content-Type': 'application/json',
         'Idempotency-Key': idempotencyKey,
-        'X-MinaDent-Contract': event.contract_version,
-        'X-MinaDent-Signature': `sha256=${signature}`,
+        'X-Kimi-Site-Contract': event.contract_version,
+        'X-Kimi-Site-Signature': `sha256=${signature}`,
         'X-Request-Id': requestId,
       },
       body: raw,
