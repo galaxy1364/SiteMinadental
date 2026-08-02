@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.4';
+const VERSION = '2026.08.03.5';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -7,7 +7,9 @@ const CORE = [
   `${BASE}manifest.webmanifest`,
   `${BASE}pwa.js`,
   `${BASE}site-core.js`,
-  `${BASE}content-upgrade.js`,
+  `${BASE}booking-engine.js`,
+  `${BASE}install-promotion.js`,
+  `${BASE}clinic-config.json`,
   `${BASE}pwa-icon-192.png`,
   `${BASE}pwa-icon-512.png`,
   `${BASE}pwa-icon-maskable-512.png`,
@@ -61,6 +63,33 @@ self.addEventListener('fetch', event => {
         return response;
       }).catch(() => cached);
       return network || cached;
+    })
+  );
+});
+
+self.addEventListener('push', event => {
+  let payload = {};
+  try { payload = event.data?.json() || {}; } catch { payload = { body: event.data?.text() || '' }; }
+  const title = payload.title || 'مینا دنتال';
+  const options = {
+    body: payload.body || 'یک اطلاعیه جدید از کلینیک دارید.',
+    icon: `${BASE}pwa-icon-192.png`,
+    badge: `${BASE}pwa-icon-192.png`,
+    data: { url: payload.url || `${BASE}` },
+    tag: payload.tag || 'mina-dental-notification',
+    renotify: Boolean(payload.renotify)
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || BASE, self.location.origin).href;
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      const existing = list.find(client => client.url.startsWith(self.location.origin + BASE));
+      if (existing) { existing.navigate(target); return existing.focus(); }
+      return clients.openWindow(target);
     })
   );
 });
