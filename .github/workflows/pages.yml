@@ -33,6 +33,20 @@ jobs:
           test -f assets/index-SCz4HByz.css
           test -f hero-bg.jpg
           test -f doctor-portrait.jpg
+          test -f pwa-icon.png
+          test -f manifest.webmanifest
+          test -f sw.js
+
+      - name: Generate standards-compliant PWA icons
+        shell: bash
+        run: |
+          set -euo pipefail
+          convert pwa-icon.png -resize 192x192! -strip pwa-icon-192.png
+          convert pwa-icon.png -resize 512x512! -strip pwa-icon-512.png
+          convert pwa-icon.png -resize 410x410! -gravity center -background '#0d5f5b' -extent 512x512 -strip pwa-icon-maskable-512.png
+          test "$(identify -format '%wx%h' pwa-icon-192.png)" = '192x192'
+          test "$(identify -format '%wx%h' pwa-icon-512.png)" = '512x512'
+          test "$(identify -format '%wx%h' pwa-icon-maskable-512.png)" = '512x512'
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
