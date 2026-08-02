@@ -1,0 +1,63 @@
+{
+  "status": "READY_FOR_BACKEND_CREDENTIALS",
+  "version": "1.0.0",
+  "principles": {
+    "single_patient_identity": true,
+    "single_booking_source_of_truth": true,
+    "deny_by_default": true,
+    "audit_every_write": true,
+    "medical_diagnosis_by_ai": false,
+    "destructive_or_financial_action_requires_confirmation": true
+  },
+  "channels": {
+    "website": {"status": "active", "entry": "/#appointment"},
+    "instagram": {"status": "active_link", "handle": "dr.mina.mazandarani", "url": "https://www.instagram.com/dr.mina.mazandarani/"},
+    "whatsapp": {"status": "active_link", "phone": "+989105306142"},
+    "bale": {"status": "credentials_required", "required": ["bot_token", "official_username_or_invite_url", "webhook_secret"]},
+    "eitaa": {"status": "credentials_required", "required": ["official_username_or_channel_url", "approved_bot_or_api_credentials", "webhook_secret"]},
+    "rubika": {"status": "credentials_required", "required": ["official_username_or_channel_url", "bot_token", "webhook_secret"]}
+  },
+  "api": {
+    "base_path": "/api/v1",
+    "endpoints": {
+      "availability": "GET /availability?service_id&doctor_id&date_from&date_to",
+      "create_booking": "POST /bookings",
+      "reschedule_booking": "PATCH /bookings/{id}/reschedule",
+      "cancel_booking": "POST /bookings/{id}/cancel",
+      "patient_lookup": "GET /patients/lookup?mobile",
+      "lead_capture": "POST /leads",
+      "conversation_ingest": "POST /conversations/messages",
+      "handoff_to_staff": "POST /conversations/{id}/handoff",
+      "channel_webhook": "POST /webhooks/{channel}",
+      "consent": "POST /consents",
+      "conversion": "POST /analytics/conversions"
+    }
+  },
+  "booking_rules": {
+    "pending_approval_default": true,
+    "prevent_double_booking": true,
+    "idempotency_key_required": true,
+    "timezone": "Asia/Tehran",
+    "calendar": "jalali_ui_gregorian_storage",
+    "reminders": ["24h", "3h"],
+    "waitlist": true,
+    "no_show_tracking": true
+  },
+  "ai_assistant": {
+    "language": "fa-IR",
+    "knowledge_sources": ["verified_clinic_profile", "verified_services", "approved_faq", "live_availability", "patient_safe_public_info"],
+    "allowed_actions": ["answer_public_questions", "capture_lead", "show_available_slots", "create_pending_booking", "handoff_to_staff"],
+    "blocked_actions": ["diagnose", "prescribe", "promise_outcome", "publish_unverified_credentials", "confirm_payment", "delete_patient_data"],
+    "emergency_escalation": true,
+    "human_handoff": true,
+    "audit_log": true
+  },
+  "required_before_go_live": [
+    "MinaDent backend base URL",
+    "OAuth or service account credentials",
+    "channel tokens and official URLs",
+    "privacy and consent text approved by owner",
+    "verified doctor credentials and service list",
+    "production database and encrypted secrets store"
+  ]
+}
