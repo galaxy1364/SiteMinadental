@@ -43,7 +43,7 @@
     if (/^tel:/i.test(href)) emit('clinic_phone_click');
     else if (/wa\.me|whatsapp/i.test(href)) emit('clinic_whatsapp_click');
     else if (/instagram/i.test(href)) emit('clinic_instagram_click');
-    else if (/google.*maps|maps\.google|neshan|balad|waze/i.test(href)) emit('clinic_map_click');
+    else if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href)) emit('clinic_map_click');
     else if (href.includes('#appointment')) emit('appointment_intent');
   }, { capture: true });
 
