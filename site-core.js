@@ -5,10 +5,7 @@
   const PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'wbraid', 'gbraid', 'fbclid'];
   const INSTAGRAM_URL = 'https://www.instagram.com/dr.mina.mazandarani/';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
-  const LAT = 35.7488375;
-  const LNG = 51.247890625;
-  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${LAT},${LNG}`)}`;
-  const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${LAT},${LNG}`)}&travelmode=driving`;
+  const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
 
   const loadModule = (src, key) => {
     if (document.querySelector(`script[data-mina-module="${key}"]`)) return;
@@ -33,8 +30,8 @@
       description,
       url: `${location.origin}${location.pathname}`,
       telephone: '+989105306142',
-      hasMap: MAP_URL,
-      sameAs: [INSTAGRAM_URL],
+      hasMap: OFFICIAL_MAP_URL,
+      sameAs: [INSTAGRAM_URL, OFFICIAL_MAP_URL],
       address: {
         '@type': 'PostalAddress',
         streetAddress: 'بلوار گل‌ها، محدوده یاس اول',
@@ -42,16 +39,11 @@
         addressRegion: 'منطقه ۲۱، استان تهران',
         addressCountry: 'IR'
       },
-      geo: {
-        '@type': 'GeoCoordinates',
-        latitude: LAT,
-        longitude: LNG
-      },
       areaServed: ['منطقه ۲۱ تهران', 'غرب تهران', 'تهران'],
       knowsLanguage: ['fa'],
       potentialAction: [
-        { '@type': 'ViewAction', name: 'مشاهده موقعیت دقیق مطب', target: MAP_URL },
-        { '@type': 'TravelAction', name: 'مسیریابی تا مطب', target: DIRECTIONS_URL }
+        { '@type': 'ViewAction', name: 'مشاهده موقعیت رسمی مطب', target: OFFICIAL_MAP_URL },
+        { '@type': 'TravelAction', name: 'مسیریابی تا مطب', target: OFFICIAL_MAP_URL }
       ]
     };
 
@@ -120,11 +112,11 @@
   window.minaDental = Object.freeze({
     emit,
     attribution,
-    place: Object.freeze({ title: PLACE_TITLE, latitude: LAT, longitude: LNG, mapUrl: MAP_URL, directionsUrl: DIRECTIONS_URL }),
+    place: Object.freeze({ title: PLACE_TITLE, mapUrl: OFFICIAL_MAP_URL }),
     channels: Object.freeze({
       instagram: { status: 'active', url: INSTAGRAM_URL },
       whatsapp: { status: 'active', phone: '+989105306142' },
-      googleMaps: { status: 'active', url: MAP_URL, directionsUrl: DIRECTIONS_URL },
+      googleMaps: { status: 'active', url: OFFICIAL_MAP_URL },
       bale: { status: 'credentials_required' },
       eitaa: { status: 'credentials_required' },
       rubika: { status: 'credentials_required' }
