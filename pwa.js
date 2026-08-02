@@ -2,8 +2,8 @@
   'use strict';
 
   const BASE = '/SiteMinadental/';
-  const LOCATION_TEXT = 'استان تهران، تهران، منطقه ۲۱، بلوار گل‌ها، P6XX+G5J';
-  const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=P6XX%2BG5J%2C%20Tehran%2C%20Iran';
+  const LOCATION_TEXT = 'استان تهران، تهران، منطقه ۲۱، بلوار گل‌ها';
+  const MAP_URL = 'https://maps.app.goo.gl/UQE1itDfMgwCGxMu5?g_st=ic';
   let deferredInstallPrompt = null;
   let installAttempted = false;
   let refreshing = false;
@@ -15,7 +15,7 @@
     document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href') || '';
       const label = (anchor.textContent || '').trim();
-      if (/google.*maps|maps\.google|neshan|balad|waze/i.test(href) || /مسیریابی|نقشه|لوکیشن|آدرس/i.test(label)) {
+      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href) || /مسیریابی|نقشه|لوکیشن|آدرس/i.test(label)) {
         anchor.href = MAP_URL;
         anchor.target = '_blank';
         anchor.rel = 'noopener noreferrer';
@@ -25,9 +25,11 @@
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
-      if (!node.nodeValue || !/امیرکبیر|گلها|منطقه\s*(۲۲|22)/.test(node.nodeValue)) continue;
+      if (!node.nodeValue || !/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J/.test(node.nodeValue)) continue;
       node.nodeValue = node.nodeValue
         .replace(/خیابان امیرکبیر،\s*گلها،\s*نبش یاس/g, LOCATION_TEXT)
+        .replace(/استان تهران،\s*تهران،\s*منطقه ۲۱،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
+        .replace(/بلوار گل‌ها،\s*Plus Code:\s*P6XX\+G5J/g, LOCATION_TEXT)
         .replace(/منطقه\s*۲۲/g, 'منطقه ۲۱')
         .replace(/منطقه\s*22/g, 'منطقه ۲۱');
     }
