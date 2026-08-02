@@ -5,8 +5,10 @@
   const PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'wbraid', 'gbraid', 'fbclid'];
   const INSTAGRAM_URL = 'https://www.instagram.com/dr.mina.mazandarani/';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
-  const PLACE_QUERY = `${PLACE_TITLE}، شماره تماس 09105306142، تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول`;
-  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACE_QUERY)}`;
+  const LAT = 35.7488375;
+  const LNG = 51.247890625;
+  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${LAT},${LNG}`)}`;
+  const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${LAT},${LNG}`)}&travelmode=driving`;
 
   const loadModule = (src, key) => {
     if (document.querySelector(`script[data-mina-module="${key}"]`)) return;
@@ -32,7 +34,7 @@
       url: `${location.origin}${location.pathname}`,
       telephone: '+989105306142',
       hasMap: MAP_URL,
-      sameAs: [INSTAGRAM_URL, MAP_URL],
+      sameAs: [INSTAGRAM_URL],
       address: {
         '@type': 'PostalAddress',
         streetAddress: 'بلوار گل‌ها، محدوده یاس اول',
@@ -40,8 +42,17 @@
         addressRegion: 'منطقه ۲۱، استان تهران',
         addressCountry: 'IR'
       },
+      geo: {
+        '@type': 'GeoCoordinates',
+        latitude: LAT,
+        longitude: LNG
+      },
       areaServed: ['منطقه ۲۱ تهران', 'غرب تهران', 'تهران'],
-      knowsLanguage: ['fa']
+      knowsLanguage: ['fa'],
+      potentialAction: [
+        { '@type': 'ViewAction', name: 'مشاهده موقعیت دقیق مطب', target: MAP_URL },
+        { '@type': 'TravelAction', name: 'مسیریابی تا مطب', target: DIRECTIONS_URL }
+      ]
     };
 
     let node = document.getElementById('mina-verified-identity-schema');
@@ -86,7 +97,7 @@
     if (/^tel:/i.test(href)) emit('clinic_phone_click');
     else if (/wa\.me|whatsapp/i.test(href)) emit('clinic_whatsapp_click');
     else if (/instagram/i.test(href)) emit('clinic_instagram_click');
-    else if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href)) emit('clinic_map_click');
+    else if (/google.*maps|maps\.google|maps\.app\.goo\.gl/i.test(href)) emit('clinic_map_click');
     else if (href.includes('#appointment')) emit('appointment_intent');
   }, { capture: true });
 
@@ -109,11 +120,11 @@
   window.minaDental = Object.freeze({
     emit,
     attribution,
-    place: Object.freeze({ title: PLACE_TITLE, query: PLACE_QUERY, mapUrl: MAP_URL }),
+    place: Object.freeze({ title: PLACE_TITLE, latitude: LAT, longitude: LNG, mapUrl: MAP_URL, directionsUrl: DIRECTIONS_URL }),
     channels: Object.freeze({
       instagram: { status: 'active', url: INSTAGRAM_URL },
       whatsapp: { status: 'active', phone: '+989105306142' },
-      googleMaps: { status: 'active', url: MAP_URL },
+      googleMaps: { status: 'active', url: MAP_URL, directionsUrl: DIRECTIONS_URL },
       bale: { status: 'credentials_required' },
       eitaa: { status: 'credentials_required' },
       rubika: { status: 'credentials_required' }
