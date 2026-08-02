@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.6';
+const VERSION = '2026.08.03.7';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -9,6 +9,10 @@ const CORE = [
   `${BASE}site-core.js`,
   `${BASE}booking-engine.js`,
   `${BASE}install-promotion.js`,
+  `${BASE}ai-assistant.js`,
+  `${BASE}content-hub.js`,
+  `${BASE}content-upgrade.js`,
+  `${BASE}content-data.json`,
   `${BASE}clinic-config.json`,
   `${BASE}pwa-icon-192.png`,
   `${BASE}pwa-icon-512.png`,
