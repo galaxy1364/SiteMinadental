@@ -1,0 +1,80 @@
+name: Extract exact Kimi site
+
+on:
+  push:
+    branches:
+      - agent/kimi-exact-original-web
+    paths:
+      - Kimi-original.zip
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/kimi-exact-original-web
+          fetch-depth: 0
+
+      - name: Verify original archive SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='986a4ef21cac2f8988c5c9689859e5b80e0325a0e8c26373777a38e28571f231'
+          actual="$(sha256sum Kimi-original.zip | awk '{print $1}')"
+          test "$actual" = "$expected"
+
+      - name: Extract and audit exactly 13 files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .kimi-extract
+          mkdir .kimi-extract
+          unzip -q Kimi-original.zip -d .kimi-extract
+          python3 - <<'PY'
+          from pathlib import Path
+          expected = {
+              'assets/index-ClUC_4GS.js',
+              'assets/index-SCz4HByz.css',
+              'before-after.jpg',
+              'clinic-interior.jpg',
+              'doctor-portrait.jpg',
+              'hero-bg.jpg',
+              'index.html',
+              'service-implant.jpg',
+              'service-orthodontics.jpg',
+              'service-pediatric.jpg',
+              'service-rootcanal.jpg',
+              'service-veneer.jpg',
+              'service-whitening.jpg',
+          }
+          root = Path('.kimi-extract')
+          actual = {p.relative_to(root).as_posix() for p in root.rglob('*') if p.is_file()}
+          if actual != expected:
+              raise SystemExit(f'Archive file-set mismatch. Missing={sorted(expected-actual)} Extra={sorted(actual-expected)}')
+          PY
+
+      - name: Publish original bytes only
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf assets
+          rm -f index.html before-after.jpg clinic-interior.jpg doctor-portrait.jpg hero-bg.jpg \
+            service-implant.jpg service-orthodontics.jpg service-pediatric.jpg \
+            service-rootcanal.jpg service-veneer.jpg service-whitening.jpg
+          cp -a .kimi-extract/. .
+          rm -rf .kimi-extract Kimi-original.zip
+
+      - name: Commit exact site files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Publish exact original Kimi site bytes'
+          git push origin HEAD:agent/kimi-exact-original-web
