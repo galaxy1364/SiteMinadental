@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-03T00:35:00+03:30",
+  "timezone": "Asia/Tehran",
+  "calendar": "persian",
+  "booking": {
+    "enabled": true,
+    "bookingWindowDays": 120,
+    "minimumLeadMinutes": 180,
+    "slotMinutes": 30,
+    "pendingApproval": true,
+    "closedWeekdays": [6],
+    "workingHours": {
+      "0": [{"start": "09:00", "end": "21:00"}],
+      "1": [{"start": "09:00", "end": "21:00"}],
+      "2": [{"start": "09:00", "end": "21:00"}],
+      "3": [{"start": "09:00", "end": "21:00"}],
+      "4": [{"start": "09:00", "end": "21:00"}],
+      "5": [{"start": "09:00", "end": "14:00"}],
+      "6": []
+    },
+    "closedJalaliDates": [],
+    "extraOpenJalaliDates": {},
+    "capacityOverrides": {},
+    "serviceDurations": {
+      "default": 30,
+      "ایمپلنت": 60,
+      "جراحی": 60,
+      "درمان ریشه": 60,
+      "کامپوزیت": 45,
+      "اطفال": 30
+    }
+  },
+  "holidays": {
+    "provider": "holidayapi.ir",
+    "endpointTemplate": "https://holidayapi.ir/jalali/{year}/{month}/{day}",
+    "cacheDays": 30,
+    "annualAuditMonth": 12,
+    "blockOfficialHolidays": true,
+    "manualOverrides": {}
+  },
+  "installPromotion": {
+    "enabled": true,
+    "title": "مینا دنتال را روی گوشی نصب کنید",
+    "description": "دسترسی سریع به رزرو نوبت، یادآوری‌ها و تخفیف‌های فعال کلینیک",
+    "discountEnabled": false,
+    "discountTitle": "",
+    "discountCode": "",
+    "discountExpiresAt": null
+  },
+  "notifications": {
+    "enabled": false,
+    "publicVapidKey": "",
+    "subscriptionEndpoint": ""
+  },
+  "integration": {
+    "mode": "static-until-backend-connected",
+    "publicConfigEndpoint": "",
+    "availabilityEndpoint": "",
+    "bookingEndpoint": "",
+    "adminSystem": "MinaDent"
+  }
+}
