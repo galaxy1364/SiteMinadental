@@ -4,14 +4,15 @@
   const STORAGE_KEY = 'mina_dental_attribution_v1';
   const PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'wbraid', 'gbraid', 'fbclid'];
   const INSTAGRAM_URL = 'https://www.instagram.com/dr.mina.mazandarani/';
-  const MAP_URL = 'https://maps.app.goo.gl/UQE1itDfMgwCGxMu5?g_st=ic';
+  const PLACE_QUERY = 'دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول، تهران';
+  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACE_QUERY)}`;
 
-  const loadContentUpgrade = () => {
-    if (document.querySelector('script[data-mina-content-upgrade]')) return;
+  const loadModule = (src, key) => {
+    if (document.querySelector(`script[data-mina-module="${key}"]`)) return;
     const script = document.createElement('script');
-    script.src = './content-upgrade.js';
+    script.src = src;
     script.defer = true;
-    script.dataset.minaContentUpgrade = 'true';
+    script.dataset.minaModule = key;
     document.head.appendChild(script);
   };
 
@@ -25,13 +26,7 @@
       '@type': 'Dentist',
       '@id': `${location.origin}${location.pathname}#verified-identity`,
       name: 'کلینیک دندانپزشکی دکتر مینا مازندرانی',
-      alternateName: [
-        'دندانپزشکی صدف',
-        'کلینیک دندانپزشکی صدف',
-        'دندانپزشکی دکتر مینا مازندرانی',
-        'Mina Mazandarani Dental Clinic',
-        'Sadaf Dental Clinic Tehran'
-      ],
+      alternateName: ['دندانپزشکی صدف','کلینیک دندانپزشکی صدف','دندانپزشکی دکتر مینا مازندرانی','Mina Mazandarani Dental Clinic','Sadaf Dental Clinic Tehran'],
       description,
       url: `${location.origin}${location.pathname}`,
       telephone: '+989105306142',
@@ -39,7 +34,7 @@
       sameAs: [INSTAGRAM_URL, MAP_URL],
       address: {
         '@type': 'PostalAddress',
-        streetAddress: 'بلوار گل‌ها',
+        streetAddress: 'بلوار گل‌ها، محدوده یاس اول',
         addressLocality: 'تهران',
         addressRegion: 'منطقه ۲۱، استان تهران',
         addressCountry: 'IR'
@@ -78,14 +73,7 @@
   window.dataLayer = window.dataLayer || [];
 
   const emit = (name, detail = {}) => {
-    const payload = {
-      event: name,
-      event_time: new Date().toISOString(),
-      page_path: location.pathname,
-      page_title: document.title,
-      attribution,
-      ...detail
-    };
+    const payload = { event:name, event_time:new Date().toISOString(), page_path:location.pathname, page_title:document.title, attribution, ...detail };
     window.dataLayer.push(payload);
     window.dispatchEvent(new CustomEvent('mina:conversion', { detail: payload }));
   };
@@ -105,19 +93,17 @@
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     const section = form.closest('section[id]');
-    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', {
-      form_id: form.id || null
-    });
+    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', { form_id: form.id || null });
   }, { capture: true });
 
   window.addEventListener('mina:pwa-install-ready', () => emit('pwa_install_ready'));
-  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', {
-    outcome: event.detail?.outcome || 'unknown'
-  }));
+  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', { outcome: event.detail?.outcome || 'unknown' }));
   window.addEventListener('mina:pwa-installed', () => emit('pwa_installed'));
 
   applySearchIdentity();
-  loadContentUpgrade();
+  loadModule('./content-upgrade.js', 'content-upgrade');
+  loadModule('./content-hub.js', 'content-hub');
+  loadModule('./ai-assistant.js', 'ai-assistant');
 
   window.minaDental = Object.freeze({
     emit,
