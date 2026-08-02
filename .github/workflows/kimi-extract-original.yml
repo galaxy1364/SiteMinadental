@@ -5,7 +5,7 @@ on:
     branches:
       - agent/kimi-exact-original-web
     paths:
-      - Kimi-original.zip
+      - '*.zip'
 
 permissions:
   contents: write
@@ -20,13 +20,21 @@ jobs:
           ref: agent/kimi-exact-original-web
           fetch-depth: 0
 
-      - name: Verify original archive SHA-256
+      - name: Locate and verify original archive SHA-256
         shell: bash
         run: |
           set -euo pipefail
           expected='986a4ef21cac2f8988c5c9689859e5b80e0325a0e8c26373777a38e28571f231'
-          actual="$(sha256sum Kimi-original.zip | awk '{print $1}')"
-          test "$actual" = "$expected"
+          archive=''
+          while IFS= read -r -d '' candidate; do
+            actual="$(sha256sum "$candidate" | awk '{print $1}')"
+            if [ "$actual" = "$expected" ]; then
+              archive="$candidate"
+              break
+            fi
+          done < <(find . -maxdepth 1 -type f -name '*.zip' -print0)
+          test -n "$archive"
+          printf 'KIMI_ARCHIVE=%s\n' "$archive" >> "$GITHUB_ENV"
 
       - name: Extract and audit exactly 13 files
         shell: bash
@@ -34,7 +42,7 @@ jobs:
           set -euo pipefail
           rm -rf .kimi-extract
           mkdir .kimi-extract
-          unzip -q Kimi-original.zip -d .kimi-extract
+          unzip -q "$KIMI_ARCHIVE" -d .kimi-extract
           python3 - <<'PY'
           from pathlib import Path
           expected = {
@@ -67,7 +75,7 @@ jobs:
             service-implant.jpg service-orthodontics.jpg service-pediatric.jpg \
             service-rootcanal.jpg service-veneer.jpg service-whitening.jpg
           cp -a .kimi-extract/. .
-          rm -rf .kimi-extract Kimi-original.zip
+          rm -rf .kimi-extract "$KIMI_ARCHIVE"
 
       - name: Commit exact site files
         shell: bash
