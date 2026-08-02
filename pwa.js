@@ -4,12 +4,8 @@
   const BASE = '/SiteMinadental/';
   const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
-  const LAT = 35.7488375;
-  const LNG = 51.247890625;
-  const COORDS = `${LAT},${LNG}`;
-  const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COORDS)}`;
-  const DIRECTIONS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(COORDS)}&travelmode=driving`;
-  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(COORDS)}&z=19&output=embed&hl=fa`;
+  const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
+  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(OFFICIAL_MAP_URL)}&output=embed&hl=fa`;
   let deferredInstallPrompt = null;
   let installAttempted = false;
   let refreshing = false;
@@ -21,12 +17,11 @@
     document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href') || '';
       const label = (anchor.textContent || '').trim();
-      const isDirections = /مسیریابی|directions/i.test(label);
-      if (/google.*maps|maps\.google|maps\.app\.goo\.gl/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps|مسیریابی/i.test(label)) {
-        anchor.href = isDirections ? DIRECTIONS_URL : MAP_URL;
+      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps|مسیریابی|نشان|بلد|ویز/i.test(label)) {
+        anchor.href = OFFICIAL_MAP_URL;
         anchor.target = '_blank';
         anchor.rel = 'noopener noreferrer';
-        anchor.setAttribute('aria-label', `${isDirections ? 'مسیریابی تا' : 'مشاهده موقعیت دقیق'} ${PLACE_TITLE}`);
+        anchor.setAttribute('aria-label', `باز کردن موقعیت رسمی ${PLACE_TITLE} در گوگل مپ`);
       }
     });
 
@@ -35,8 +30,8 @@
       const title = frame.getAttribute('title') || '';
       if (/google.*maps|maps\.google|map/i.test(src) || /نقشه|map/i.test(title)) {
         if (frame.getAttribute('src') !== MAP_EMBED_URL) frame.setAttribute('src', MAP_EMBED_URL);
-        frame.title = `موقعیت ثابت و دقیق ${PLACE_TITLE}، ${LOCATION_TEXT}`;
-        frame.loading = 'lazy';
+        frame.title = `موقعیت رسمی ${PLACE_TITLE}، ${LOCATION_TEXT}`;
+        frame.loading = 'eager';
         frame.referrerPolicy = 'no-referrer-when-downgrade';
       }
     });
