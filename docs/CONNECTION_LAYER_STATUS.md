@@ -1,24 +1,29 @@
-# SiteMinaDental Connection Layer Status
+# Kimi Dental Website Backend Status
+
+## Project boundary
+
+This backend belongs only to the Kimi public dental website in `galaxy1364/SiteMinadental`.
+It has no dependency on, write access to, or contract with the separate Base44 dental-management application.
 
 ## Verified implementation
 
-- Server-only appointment and contact gateways.
+- Server-only appointment-request and contact gateways for the public website.
 - Strict Iranian mobile validation: `^09[0-9]{9}$` after Persian/Arabic digit conversion.
-- HMAC-SHA256 signed MinaDent/CRM webhook events.
+- HMAC-SHA256 signed events to a future website CRM/backend webhook.
 - Idempotency key and request ID propagation.
 - Eight-second upstream timeout and explicit 502 errors.
-- No success response while the upstream connection is unconfigured or rejects the event.
-- Safety-gated Persian AI assistant endpoint.
-- CORS allowlist, no-store responses and basic security headers.
-- Dependency-free Node 20 contract tests and GitHub Actions CI.
+- No success response while the website backend connection is unconfigured or rejects the event.
+- Safety-gated Persian website assistant endpoint.
+- CORS allowlist, no-store responses and security headers.
+- Dependency-free Node.js 24 contract tests and GitHub Actions CI.
 
 ## Not yet connected
 
 The following server-only values are intentionally absent from Git:
 
 - `ALLOWED_ORIGINS`
-- `MINADENT_WEBHOOK_URL`
-- `MINADENT_WEBHOOK_SECRET`
+- `KIMI_SITE_WEBHOOK_URL`
+- `KIMI_SITE_WEBHOOK_SECRET`
 - `AI_GATEWAY_API_KEY`
 - `AI_GATEWAY_MODEL`
 
@@ -31,8 +36,12 @@ The compiled public-site Bundle still contains fake success handlers. The new en
 
 ## Production gate
 
-A durable distributed rate limit, consent policy, retention policy, monitoring and official domain/origin ownership must be configured before public production traffic.
+A real website CRM/backend destination, durable distributed rate limit, consent policy, retention policy, monitoring and official domain/origin ownership must be configured before public production traffic.
+
+## Explicit exclusion
+
+`galaxy1364/Minadental-base44` is a separate clinic-management project and is outside this website scope. No Base44 entity, function, schema or credential may be added or changed as part of this website project unless the owner explicitly starts a separate integration project.
 
 ## Resume point
 
-`RP-10-CONNECTION-API-DEPLOYED-CREDENTIAL-AND-FRONTEND-BRIDGE-GATE`
+`RP-12-KIMI-SITE-BACKEND-LIVE-CRM-CREDENTIAL-AND-FRONTEND-BRIDGE-PENDING`
