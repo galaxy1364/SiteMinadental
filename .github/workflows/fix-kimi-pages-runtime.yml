@@ -1,0 +1,67 @@
+name: Fix Kimi Pages runtime
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-kimi-pages-runtime.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch only hosting compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('assets/index-ClUC_4GS.js')
+          s = p.read_text(encoding='utf-8')
+
+          old_route = 'path:"/",element:'
+          new_route = 'path:"*",element:'
+          count = s.count(old_route)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one root route, found {count}')
+          s = s.replace(old_route, new_route, 1)
+
+          images = [
+              'hero-bg.jpg','doctor-portrait.jpg','clinic-interior.jpg','before-after.jpg',
+              'service-implant.jpg','service-orthodontics.jpg','service-pediatric.jpg',
+              'service-rootcanal.jpg','service-veneer.jpg','service-whitening.jpg'
+          ]
+          for name in images:
+              s = s.replace(f'"/{name}"', f'"./{name}"')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Verify patch and required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'path:"*",element:' assets/index-ClUC_4GS.js >/dev/null
+          ! grep -F 'path:"/",element:' assets/index-ClUC_4GS.js >/dev/null
+          for f in index.html assets/index-ClUC_4GS.js assets/index-SCz4HByz.css hero-bg.jpg doctor-portrait.jpg clinic-interior.jpg before-after.jpg service-implant.jpg service-orthodontics.jpg service-pediatric.jpg service-rootcanal.jpg service-veneer.jpg service-whitening.jpg; do
+            test -f "$f"
+          done
+
+      - name: Commit hosting-only runtime fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/index-ClUC_4GS.js
+          git commit -m 'Fix Kimi routing and asset paths for GitHub Pages'
+          git push origin HEAD:main
