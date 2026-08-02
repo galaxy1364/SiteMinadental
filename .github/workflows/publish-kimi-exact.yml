@@ -1,0 +1,31 @@
+name: Publish exact original Kimi website
+on:
+  push:
+    branches: [agent/kimi-exact-original-site-v2]
+    paths: [payload.ready]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/kimi-exact-original-site-v2
+          fetch-depth: 0
+      - name: Verify and extract exact original package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .payload75/part-* | base64 --decode > /tmp/kimi-original.zip
+          echo "986a4ef21cac2f8988c5c9689859e5b80e0325a0e8c26373777a38e28571f231  /tmp/kimi-original.zip" | sha256sum -c -
+          rm -rf /tmp/kimi-site && mkdir -p /tmp/kimi-site
+          unzip -q /tmp/kimi-original.zip -d /tmp/kimi-site
+          test "$(find /tmp/kimi-site -type f | wc -l)" -eq 13
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/kimi-site/. .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish exact original Kimi website (13 files)"
+          git push origin HEAD:agent/kimi-exact-original-site-v2
