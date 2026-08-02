@@ -2,21 +2,50 @@
   "id": "/SiteMinadental/",
   "name": "کلینیک دندانپزشکی دکتر مینا مازندرانی",
   "short_name": "مینا دنتال",
-  "description": "وب‌اپ رسمی کلینیک دندانپزشکی دکتر مینا مازندرانی",
+  "description": "وب‌اپ رسمی کلینیک دندانپزشکی دکتر مینا مازندرانی در منطقه ۲۱ تهران",
   "lang": "fa",
   "dir": "rtl",
-  "start_url": "/SiteMinadental/",
+  "start_url": "/SiteMinadental/?source=pwa",
   "scope": "/SiteMinadental/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#0d9488",
   "categories": ["medical", "health", "business"],
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./pwa-icon.png",
+      "src": "./pwa-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "رزرو نوبت",
+      "short_name": "رزرو",
+      "url": "/SiteMinadental/#appointment?source=pwa-shortcut",
+      "icons": [{"src": "./pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+    },
+    {
+      "name": "تماس با کلینیک",
+      "short_name": "تماس",
+      "url": "/SiteMinadental/#contact?source=pwa-shortcut",
+      "icons": [{"src": "./pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
     }
   ]
 }
