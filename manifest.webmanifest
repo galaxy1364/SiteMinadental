@@ -1,0 +1,22 @@
+{
+  "id": "/SiteMinadental/",
+  "name": "کلینیک دندانپزشکی دکتر مینا مازندرانی",
+  "short_name": "مینا دنتال",
+  "description": "وب‌اپ رسمی کلینیک دندانپزشکی دکتر مینا مازندرانی",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/SiteMinadental/",
+  "scope": "/SiteMinadental/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0d9488",
+  "categories": ["medical", "health", "business"],
+  "icons": [
+    {
+      "src": "./pwa-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
