@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.8';
+const VERSION = '2026.08.03.9';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -62,13 +62,12 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const network = fetch(event.request, { cache: 'no-cache' }).then(response => {
+    fetch(event.request, { cache: 'no-cache' })
+      .then(response => {
         if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
         return response;
-      }).catch(() => cached);
-      return network || cached;
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 
