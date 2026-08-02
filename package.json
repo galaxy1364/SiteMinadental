@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "test": "node tests/contract.test.js",
-    "check": "node --check api/health.js && node --check api/appointment.js && node --check api/contact.js && node --check api/assistant.js && node --check api/_lib/http.js && node --check api/_lib/validation.js && node --check api/_lib/forward.js"
+    "check": "node --check api/health.js && node --check api/appointment.js && node --check api/contact.js && node --check api/assistant.js && node --check api/self-test.js && node --check api/_lib/http.js && node --check api/_lib/validation.js && node --check api/_lib/forward.js"
   }
 }
