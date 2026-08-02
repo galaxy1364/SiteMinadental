@@ -3,9 +3,7 @@
 
   const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent);
   let config = null;
-  let installReady = false;
 
   async function loadConfig() {
     try {
@@ -52,9 +50,43 @@
     });
   }
 
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map(ch => ch.charCodeAt(0)));
+  }
+
+  async function subscribePush() {
+    const pushConfig = config?.notifications || {};
+    if (!pushConfig.enabled || !pushConfig.publicVapidKey || !pushConfig.subscriptionEndpoint) {
+      return { ok: false, reason: 'backend_not_configured' };
+    }
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(pushConfig.publicVapidKey)
+      });
+    }
+    const response = await fetch(pushConfig.subscriptionEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        source: 'website-pwa',
+        locale: 'fa-IR',
+        installed: isStandalone()
+      })
+    });
+    if (!response.ok) throw new Error(`Push subscription HTTP ${response.status}`);
+    return { ok: true };
+  }
+
   async function requestNotifications() {
     if (!isStandalone() || !('Notification' in window) || Notification.permission !== 'default') return;
-    const promotion = config?.installPromotion || {};
     const notice = document.createElement('aside');
     notice.id = 'mina-notification-offer';
     notice.className = 'mina-install-offer';
@@ -63,7 +95,12 @@
     document.body.appendChild(notice);
     notice.querySelector('.mina-install-primary').addEventListener('click', async () => {
       const permission = await Notification.requestPermission();
-      window.minaDental?.emit?.('notification_permission_result', { permission });
+      let push = { ok: false, reason: 'permission_denied' };
+      if (permission === 'granted') {
+        try { push = await subscribePush(); }
+        catch (error) { push = { ok: false, reason: 'subscription_failed', message: error.message }; }
+      }
+      window.minaDental?.emit?.('notification_permission_result', { permission, push });
       notice.remove();
     });
     notice.querySelector('.mina-install-later').addEventListener('click', () => notice.remove());
@@ -78,7 +115,7 @@
     }
   }
 
-  window.addEventListener('mina:pwa-install-ready', () => { installReady = true; createBanner(); });
+  window.addEventListener('mina:pwa-install-ready', createBanner);
   window.addEventListener('mina:pwa-installed', () => document.getElementById('mina-install-offer')?.remove());
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
