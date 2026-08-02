@@ -15,12 +15,12 @@ module.exports = async function handler(req, res) {
 
   return json(res, 200, {
     ok: true,
-    service: 'siteminadental-connection',
+    service: 'kimi-dental-site-backend',
     contract_version: '2026-08-02.v1',
     environment: process.env.VERCEL_ENV || 'unknown',
     deployment: process.env.VERCEL_GIT_COMMIT_SHA || null,
     capabilities: {
-      minadent_webhook: isConfigured(),
+      site_webhook: isConfigured(),
       assistant: aiConfigured,
       allowed_origins: allowedOriginsConfigured,
       durable_rate_limit: false,
