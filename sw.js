@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.2';
+const VERSION = '2026.08.03.3';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -7,6 +7,7 @@ const CORE = [
   `${BASE}manifest.webmanifest`,
   `${BASE}pwa.js`,
   `${BASE}site-core.js`,
+  `${BASE}content-upgrade.js`,
   `${BASE}pwa-icon-192.png`,
   `${BASE}pwa-icon-512.png`,
   `${BASE}pwa-icon-maskable-512.png`,
@@ -59,7 +60,7 @@ self.addEventListener('fetch', event => {
         if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
         return response;
       }).catch(() => cached);
-      return cached || network;
+      return network || cached;
     })
   );
 });
