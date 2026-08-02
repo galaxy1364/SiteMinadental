@@ -3,9 +3,10 @@
 
   const BASE = '/SiteMinadental/';
   const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
-  const PLACE_QUERY = 'دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول، تهران';
+  const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
+  const PLACE_QUERY = `${PLACE_TITLE}، شماره تماس 09105306142، ${LOCATION_TEXT}`;
   const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACE_QUERY)}`;
-  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(PLACE_QUERY)}&output=embed&hl=fa`;
+  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(PLACE_QUERY)}&output=embed&hl=fa&z=18`;
   let deferredInstallPrompt = null;
   let installAttempted = false;
   let refreshing = false;
@@ -17,11 +18,11 @@
     document.querySelectorAll('a[href]').forEach(anchor => {
       const href = anchor.getAttribute('href') || '';
       const label = (anchor.textContent || '').trim();
-      if (/google.*maps|maps\.google|maps\.app\.goo\.gl/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|مسیریابی|باز کردن در Maps/i.test(label)) {
+      if (/google.*maps|maps\.google|maps\.app\.goo\.gl/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps/i.test(label)) {
         anchor.href = MAP_URL;
         anchor.target = '_blank';
         anchor.rel = 'noopener noreferrer';
-        anchor.setAttribute('aria-label', 'مشاهده موقعیت دقیق دندانپزشکی تخصصی صدف در گوگل مپ');
+        anchor.setAttribute('aria-label', `مشاهده موقعیت دقیق ${PLACE_TITLE} در گوگل مپ`);
       }
     });
 
@@ -30,7 +31,7 @@
       const title = frame.getAttribute('title') || '';
       if (/google.*maps|maps\.google|map/i.test(src) || /نقشه|map/i.test(title)) {
         if (frame.src !== MAP_EMBED_URL) frame.src = MAP_EMBED_URL;
-        frame.title = 'موقعیت دقیق دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول';
+        frame.title = `موقعیت دقیق ${PLACE_TITLE}، ${LOCATION_TEXT}`;
         frame.loading = 'lazy';
         frame.referrerPolicy = 'no-referrer-when-downgrade';
       }
