@@ -1,0 +1,34 @@
+name: Connection Layer CI
+
+on:
+  push:
+    branches:
+      - agent/site-connection-layer-v1
+    paths:
+      - 'api/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'vercel.json'
+      - '.github/workflows/connection-ci.yml'
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'vercel.json'
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm run check
+      - run: npm test
