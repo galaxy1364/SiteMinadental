@@ -1,0 +1,42 @@
+name: Import exact Kimi website
+
+on:
+  push:
+    branches:
+      - agent/kimi-exact-singlefile-live
+    paths:
+      - .github/workflows/import-kimi-exact.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-exact-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/kimi-exact-singlefile-live
+
+      - name: Download exact single-file Kimi build
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 8 --retry-delay 3 \
+            --output /tmp/kimi-index.html \
+            'https://mina-dental-kimi-exact-live.vercel.app/'
+          echo 'c25e5c69a4ca523e6275daeff26042f0dec1497e8843f723a693c8a16d656059  /tmp/kimi-index.html' | sha256sum --check --strict
+
+      - name: Publish exact file only
+        run: |
+          set -euo pipefail
+          cp /tmp/kimi-index.html index.html
+          rm -f README.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html README.md
+          git diff --cached --quiet && exit 0
+          git commit -m 'Publish exact Kimi website [skip ci]'
+          git push origin HEAD:agent/kimi-exact-singlefile-live
