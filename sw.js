@@ -1,4 +1,4 @@
-const VERSION = '2026.08.02.1';
+const VERSION = '2026.08.03.1';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -6,7 +6,10 @@ const CORE = [
   `${BASE}index.html`,
   `${BASE}manifest.webmanifest`,
   `${BASE}pwa.js`,
-  `${BASE}pwa-icon.png`,
+  `${BASE}site-core.js`,
+  `${BASE}pwa-icon-192.png`,
+  `${BASE}pwa-icon-512.png`,
+  `${BASE}pwa-icon-maskable-512.png`,
   `${BASE}assets/index-ClUC_4GS.js`,
   `${BASE}assets/index-SCz4HByz.css`,
   `${BASE}before-after.jpg`,
@@ -22,11 +25,7 @@ const CORE = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(CORE))
-      .then(() => self.skipWaiting())
-  );
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
@@ -46,8 +45,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request, { cache: 'no-store' })
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(`${BASE}index.html`, copy));
+          if (response.ok) caches.open(CACHE).then(cache => cache.put(`${BASE}index.html`, response.clone()));
           return response;
         })
         .catch(() => caches.match(`${BASE}index.html`))
@@ -57,13 +55,10 @@ self.addEventListener('fetch', event => {
 
   event.respondWith(
     caches.match(event.request).then(cached => {
-      const network = fetch(event.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put(event.request, copy));
-        }
+      const network = fetch(event.request, { cache: 'no-cache' }).then(response => {
+        if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone()));
         return response;
-      });
+      }).catch(() => cached);
       return cached || network;
     })
   );
@@ -71,4 +66,5 @@ self.addEventListener('fetch', event => {
 
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'GET_VERSION') event.source?.postMessage({ type: 'VERSION', version: VERSION });
 });
