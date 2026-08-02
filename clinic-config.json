@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "updatedAt": "2026-08-03T00:35:00+03:30",
+  "schemaVersion": 2,
+  "updatedAt": "2026-08-03T00:43:00+03:30",
   "timezone": "Asia/Tehran",
   "calendar": "persian",
   "booking": {
@@ -22,14 +22,7 @@
     "closedJalaliDates": [],
     "extraOpenJalaliDates": {},
     "capacityOverrides": {},
-    "serviceDurations": {
-      "default": 30,
-      "ایمپلنت": 60,
-      "جراحی": 60,
-      "درمان ریشه": 60,
-      "کامپوزیت": 45,
-      "اطفال": 30
-    }
+    "serviceDurations": {"default":30,"ایمپلنت":60,"جراحی":60,"درمان ریشه":60,"کامپوزیت":45,"اطفال":30}
   },
   "holidays": {
     "provider": "holidayapi.ir",
@@ -48,16 +41,41 @@
     "discountCode": "",
     "discountExpiresAt": null
   },
-  "notifications": {
-    "enabled": false,
-    "publicVapidKey": "",
-    "subscriptionEndpoint": ""
+  "notifications": {"enabled":false,"publicVapidKey":"","subscriptionEndpoint":""},
+  "ai": {
+    "enabled": true,
+    "mode": "safe-fallback-until-backend-connected",
+    "publicAssistantEndpoint": "",
+    "adminCopilotEndpoint": "",
+    "knowledgeEndpoint": "",
+    "conversationEndpoint": "",
+    "allowedPublicTools": ["services.read","availability.read","booking.request","offers.read","articles.read","location.read"],
+    "adminToolsRequireRBAC": true,
+    "adminActionsRequirePreview": true,
+    "auditAllActions": true,
+    "prohibitedAutonomousActions": ["diagnosis.write","prescription.write","finance.write","patient-record.read-without-consent","campaign.publish-without-approval"]
+  },
+  "content": {
+    "endpoint": "./content-data.json",
+    "medicalReviewRequired": true,
+    "instagram": "https://www.instagram.com/dr.mina.mazandarani/",
+    "instagramImportMode": "official-api-or-owner-upload-only"
+  },
+  "campaigns": {
+    "mode": "measurement-ready-until-ad-accounts-connected",
+    "endpoint": "",
+    "approvalRequired": true,
+    "channels": ["google-ads","instagram","whatsapp","bale","eitaa","rubika"],
+    "trackUTM": true,
+    "trackConversions": true,
+    "patientConsentRequired": true
   },
   "integration": {
     "mode": "static-until-backend-connected",
     "publicConfigEndpoint": "",
     "availabilityEndpoint": "",
     "bookingEndpoint": "",
-    "adminSystem": "MinaDent"
+    "adminSystem": "MinaDent",
+    "requiredSecurity": ["OAuth2/OIDC","RBAC","deny-by-default","audit-log","rate-limit","consent","encryption-in-transit"]
   }
 }
