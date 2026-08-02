@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.7';
+const VERSION = '2026.08.03.8';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
@@ -14,6 +14,7 @@ const CORE = [
   `${BASE}content-upgrade.js`,
   `${BASE}content-data.json`,
   `${BASE}clinic-config.json`,
+  `${BASE}apple-touch-icon-180.png`,
   `${BASE}pwa-icon-192.png`,
   `${BASE}pwa-icon-512.png`,
   `${BASE}pwa-icon-maskable-512.png`,
