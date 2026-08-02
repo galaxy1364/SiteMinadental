@@ -4,7 +4,8 @@
   const STORAGE_KEY = 'mina_dental_attribution_v1';
   const PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'wbraid', 'gbraid', 'fbclid'];
   const INSTAGRAM_URL = 'https://www.instagram.com/dr.mina.mazandarani/';
-  const PLACE_QUERY = 'دندانپزشکی تخصصی صدف، بلوار گل‌ها، یاس اول، تهران';
+  const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
+  const PLACE_QUERY = `${PLACE_TITLE}، شماره تماس 09105306142، تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول`;
   const MAP_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(PLACE_QUERY)}`;
 
   const loadModule = (src, key) => {
@@ -17,7 +18,7 @@
   };
 
   const applySearchIdentity = () => {
-    const description = 'کلینیک دندانپزشکی دکتر مینا مازندرانی در منطقه ۲۱ تهران؛ همان مرکز شناخته‌شده با نام پیشین دندانپزشکی صدف. اطلاعات خدمات، موقعیت رسمی و درخواست نوبت از کانال‌های تأییدشده.';
+    const description = 'دندانپزشکی تخصصی صدف، کلینیک دکتر مینا مازندرانی در منطقه ۲۱ تهران؛ اطلاعات خدمات، موقعیت رسمی و درخواست نوبت از کانال‌های تأییدشده.';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.content = description;
 
@@ -25,8 +26,8 @@
       '@context': 'https://schema.org',
       '@type': 'Dentist',
       '@id': `${location.origin}${location.pathname}#verified-identity`,
-      name: 'کلینیک دندانپزشکی دکتر مینا مازندرانی',
-      alternateName: ['دندانپزشکی صدف','کلینیک دندانپزشکی صدف','دندانپزشکی دکتر مینا مازندرانی','Mina Mazandarani Dental Clinic','Sadaf Dental Clinic Tehran'],
+      name: PLACE_TITLE,
+      alternateName: ['دندانپزشکی صدف','کلینیک دندانپزشکی صدف','کلینیک دندانپزشکی دکتر مینا مازندرانی','Mina Mazandarani Dental Clinic','Sadaf Dental Clinic Tehran'],
       description,
       url: `${location.origin}${location.pathname}`,
       telephone: '+989105306142',
@@ -108,6 +109,7 @@
   window.minaDental = Object.freeze({
     emit,
     attribution,
+    place: Object.freeze({ title: PLACE_TITLE, query: PLACE_QUERY, mapUrl: MAP_URL }),
     channels: Object.freeze({
       instagram: { status: 'active', url: INSTAGRAM_URL },
       whatsapp: { status: 'active', phone: '+989105306142' },
