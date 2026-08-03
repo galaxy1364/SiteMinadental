@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.15';
+const VERSION = '2026.08.03.16';
 const BASE = '/SiteMinadental/';
 const STATIC_CACHE = `mina-dental-static-${VERSION}`;
 const RUNTIME_CACHE = `mina-dental-runtime-${VERSION}`;
@@ -11,6 +11,7 @@ const CORE = [
   `${BASE}pwa.js`,
   `${BASE}site-core.js`,
   `${BASE}update-manager.js`,
+  `${BASE}theme-motion.css`,
   `${BASE}booking-engine.js`,
   `${BASE}install-promotion.js`,
   `${BASE}ai-assistant.js`,
@@ -101,7 +102,7 @@ self.addEventListener('fetch', event => {
   if (url.origin !== self.location.origin || !url.pathname.startsWith(BASE)) return;
 
   if (event.request.mode === 'navigate') return void event.respondWith(networkFirst(event.request));
-  const dynamic = /clinic-config\.json$|content-data\.json$|manifest\.webmanifest$|update-manager\.js$/.test(url.pathname);
+  const dynamic = /clinic-config\.json$|content-data\.json$|manifest\.webmanifest$|update-manager\.js$|theme-motion\.css$/.test(url.pathname);
   event.respondWith(dynamic ? networkFirst(event.request) : staleWhileRevalidate(event.request));
 });
 
