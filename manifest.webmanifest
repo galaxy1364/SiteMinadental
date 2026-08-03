@@ -1,11 +1,11 @@
 {
-  "id": "/SiteMinadental/",
+  "id": "/SiteMinadental/?app=mina-dental-v2026080314",
   "name": "دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی",
   "short_name": "مینا دنتال",
   "description": "وب‌اپ رسمی دندانپزشکی تخصصی صدف و کلینیک دکتر مینا مازندرانی در منطقه ۲۱ تهران",
   "lang": "fa-IR",
   "dir": "rtl",
-  "start_url": "/SiteMinadental/?source=pwa",
+  "start_url": "/SiteMinadental/?source=pwa&v=2026080314",
   "scope": "/SiteMinadental/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
@@ -16,19 +16,19 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/SiteMinadental/pwa-icon-192.png",
+      "src": "/SiteMinadental/pwa-icon-192.png?v=2026080314",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/SiteMinadental/pwa-icon-512.png",
+      "src": "/SiteMinadental/pwa-icon-512.png?v=2026080314",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/SiteMinadental/pwa-icon-maskable-512.png",
+      "src": "/SiteMinadental/pwa-icon-maskable-512.png?v=2026080314",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -40,14 +40,14 @@
       "short_name": "رزرو",
       "description": "رفتن مستقیم به فرم درخواست نوبت",
       "url": "/SiteMinadental/?source=pwa-shortcut#appointment",
-      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png?v=2026080314", "sizes": "192x192", "type": "image/png"}]
     },
     {
       "name": "تماس با کلینیک",
       "short_name": "تماس",
       "description": "رفتن مستقیم به اطلاعات تماس کلینیک",
       "url": "/SiteMinadental/?source=pwa-shortcut#contact",
-      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png?v=2026080314", "sizes": "192x192", "type": "image/png"}]
     }
   ]
 }
