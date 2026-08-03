@@ -8,11 +8,20 @@
   const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
 
   const loadModule = (src, key) => {
-    if (document.querySelector(`script[data-mina-module="${key}"]`)) return;
+    const absolute = new URL(src, document.baseURI).href;
+    const exists = [...document.scripts].some(script =>
+      script.dataset.minaModule === key || (script.src && new URL(script.src, document.baseURI).href === absolute)
+    );
+    if (exists) return;
     const script = document.createElement('script');
     script.src = src;
     script.defer = true;
     script.dataset.minaModule = key;
+    script.addEventListener('error', () => {
+      window.dispatchEvent(new CustomEvent('mina:runtime-error', {
+        detail: { source: key, message: `Module failed to load: ${src}` }
+      }));
+    }, { once: true });
     document.head.appendChild(script);
   };
 
@@ -77,10 +86,36 @@
   window.dataLayer = window.dataLayer || [];
 
   const emit = (name, detail = {}) => {
-    const payload = { event:name, event_time:new Date().toISOString(), page_path:location.pathname, page_title:document.title, attribution, ...detail };
+    const payload = {
+      event: name,
+      event_time: new Date().toISOString(),
+      page_path: location.pathname,
+      page_title: document.title,
+      attribution,
+      ...detail
+    };
     window.dataLayer.push(payload);
     window.dispatchEvent(new CustomEvent('mina:conversion', { detail: payload }));
   };
+
+  window.addEventListener('error', event => {
+    emit('runtime_error', {
+      source: event.filename || 'window',
+      message: String(event.message || 'Unknown runtime error').slice(0, 500),
+      line: event.lineno || null,
+      column: event.colno || null
+    });
+  });
+
+  window.addEventListener('unhandledrejection', event => {
+    emit('unhandled_rejection', {
+      message: String(event.reason?.message || event.reason || 'Unhandled rejection').slice(0, 500)
+    });
+  });
+
+  window.addEventListener('mina:runtime-error', event => {
+    emit('module_runtime_error', event.detail || {});
+  });
 
   document.addEventListener('click', event => {
     const anchor = event.target.closest?.('a[href]');
@@ -97,11 +132,15 @@
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     const section = form.closest('section[id]');
-    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', { form_id: form.id || null });
+    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', {
+      form_id: form.id || null
+    });
   }, { capture: true });
 
   window.addEventListener('mina:pwa-install-ready', () => emit('pwa_install_ready'));
-  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', { outcome: event.detail?.outcome || 'unknown' }));
+  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', {
+    outcome: event.detail?.outcome || 'unknown'
+  }));
   window.addEventListener('mina:pwa-installed', () => emit('pwa_installed'));
 
   applySearchIdentity();
