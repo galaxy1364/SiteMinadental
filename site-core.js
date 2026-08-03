@@ -26,7 +26,7 @@
   };
 
   const applySearchIdentity = () => {
-    const description = 'دندانپزشکی تخصصی صدف، کلینیک دکتر مینا مازندرانی در منطقه ۲۱ تهران؛ اطلاعات خدمات، موقعیت رسمی و درخواست نوبت از کانال‌های تأییدشده.';
+    const description = 'دندانپزشکی تخصصی صدف، کلینیک دکتر مینا مازندرانی در منطقه ۲۲ تهران؛ اطلاعات خدمات، موقعیت رسمی و درخواست نوبت از کانال‌های تأییدشده.';
     const meta = document.querySelector('meta[name="description"]');
     if (meta) meta.content = description;
 
@@ -45,10 +45,10 @@
         '@type': 'PostalAddress',
         streetAddress: 'بلوار گل‌ها، محدوده یاس اول',
         addressLocality: 'تهران',
-        addressRegion: 'منطقه ۲۱، استان تهران',
+        addressRegion: 'منطقه ۲۲، استان تهران',
         addressCountry: 'IR'
       },
-      areaServed: ['منطقه ۲۱ تهران', 'غرب تهران', 'تهران'],
+      areaServed: ['منطقه ۲۲ تهران', 'غرب تهران', 'تهران'],
       knowsLanguage: ['fa'],
       potentialAction: [
         { '@type': 'ViewAction', name: 'مشاهده موقعیت رسمی مطب', target: OFFICIAL_MAP_URL },
