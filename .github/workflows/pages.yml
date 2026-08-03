@@ -75,16 +75,23 @@ jobs:
           grep -q 'apple-touch-icon-180.png' index.html
           grep -q 'beforeinstallprompt' pwa.js
           grep -q 'notificationclick' sw.js
+          grep -q 'apple-touch-icon-v2026080314.png' pwa.js
 
       - name: Generate verified PWA icons from approved logo
         shell: bash
         run: |
           set -euo pipefail
           convert pwa-icon.png -auto-orient -strip -resize 180x180 -gravity center -background '#0d5f5b' -extent 180x180 apple-touch-icon-180.png
+          cp apple-touch-icon-180.png apple-touch-icon.png
+          cp apple-touch-icon-180.png apple-touch-icon-precomposed.png
+          cp apple-touch-icon-180.png apple-touch-icon-v2026080314.png
           convert pwa-icon.png -auto-orient -strip -resize 192x192 -gravity center -background '#0d5f5b' -extent 192x192 pwa-icon-192.png
           convert pwa-icon.png -auto-orient -strip -resize 512x512 -gravity center -background '#0d5f5b' -extent 512x512 pwa-icon-512.png
           convert pwa-icon.png -auto-orient -strip -resize 410x410 -gravity center -background '#0d5f5b' -extent 512x512 pwa-icon-maskable-512.png
           test "$(identify -format '%wx%h' apple-touch-icon-180.png)" = '180x180'
+          test "$(identify -format '%wx%h' apple-touch-icon.png)" = '180x180'
+          test "$(identify -format '%wx%h' apple-touch-icon-precomposed.png)" = '180x180'
+          test "$(identify -format '%wx%h' apple-touch-icon-v2026080314.png)" = '180x180'
           test "$(identify -format '%wx%h' pwa-icon-192.png)" = '192x192'
           test "$(identify -format '%wx%h' pwa-icon-512.png)" = '512x512'
           test "$(identify -format '%wx%h' pwa-icon-maskable-512.png)" = '512x512'
@@ -93,7 +100,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in apple-touch-icon-180.png pwa-icon-192.png pwa-icon-512.png pwa-icon-maskable-512.png; do
+          for file in apple-touch-icon-180.png apple-touch-icon.png apple-touch-icon-precomposed.png apple-touch-icon-v2026080314.png pwa-icon-192.png pwa-icon-512.png pwa-icon-maskable-512.png; do
             test -s "$file"
             identify "$file" >/dev/null
           done
