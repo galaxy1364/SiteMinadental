@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.10';
+const VERSION = '2026.08.03.11';
 const BASE = '/SiteMinadental/';
 const CACHE = `mina-dental-${VERSION}`;
 const CORE = [
