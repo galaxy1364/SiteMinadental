@@ -113,9 +113,7 @@
     });
   });
 
-  window.addEventListener('mina:runtime-error', event => {
-    emit('module_runtime_error', event.detail || {});
-  });
+  window.addEventListener('mina:runtime-error', event => emit('module_runtime_error', event.detail || {}));
 
   document.addEventListener('click', event => {
     const anchor = event.target.closest?.('a[href]');
@@ -132,18 +130,15 @@
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
     const section = form.closest('section[id]');
-    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', {
-      form_id: form.id || null
-    });
+    emit(section?.id === 'appointment' ? 'appointment_form_submit' : 'contact_form_submit', { form_id: form.id || null });
   }, { capture: true });
 
   window.addEventListener('mina:pwa-install-ready', () => emit('pwa_install_ready'));
-  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', {
-    outcome: event.detail?.outcome || 'unknown'
-  }));
+  window.addEventListener('mina:pwa-install-result', event => emit('pwa_install_result', { outcome: event.detail?.outcome || 'unknown' }));
   window.addEventListener('mina:pwa-installed', () => emit('pwa_installed'));
 
   applySearchIdentity();
+  loadModule('./update-manager.js', 'update-manager');
   loadModule('./content-upgrade.js', 'content-upgrade');
   loadModule('./content-hub.js', 'content-hub');
   loadModule('./ai-assistant.js', 'ai-assistant');
