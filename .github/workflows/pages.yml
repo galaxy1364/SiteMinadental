@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           required=(
-            index.html manifest.webmanifest sw.js pwa.js site-core.js
+            index.html manifest.webmanifest sw.js pwa.js site-core.js update-manager.js theme-motion.css
             booking-engine.js install-promotion.js ai-assistant.js
             content-hub.js content-upgrade.js clinic-config.json content-data.json
             assets/index-ClUC_4GS.js assets/index-SCz4HByz.css
@@ -53,29 +53,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in sw.js pwa.js site-core.js booking-engine.js install-promotion.js ai-assistant.js content-hub.js content-upgrade.js; do
+          for file in sw.js pwa.js site-core.js update-manager.js booking-engine.js install-promotion.js ai-assistant.js content-hub.js content-upgrade.js; do
             node --check "$file"
           done
 
-      - name: Validate authoritative location runtime
+      - name: Validate authoritative identity and location
         shell: bash
         run: |
           set -euo pipefail
           ! grep -RInE 'P6XX\+G5J|maps\.app\.goo\.gl/UQE1itDfMgwCGxMu5|35\.7488375|51\.247890625' \
             --exclude-dir=.git --exclude='*.md' .
+          ! grep -InE 'منطقه[[:space:]]*(۲۱|21)' index.html manifest.webmanifest pwa.js site-core.js sitemap.xml
+          grep -q 'منطقه ۲۲' index.html
+          grep -q 'منطقه ۲۲' manifest.webmanifest
           grep -q 'maps.app.goo.gl/giT47654NMPreoPt5' pwa.js
           grep -q 'maps.app.goo.gl/giT47654NMPreoPt5' site-core.js
 
-      - name: Verify PWA contract
+      - name: Verify PWA and update contract
         shell: bash
         run: |
           set -euo pipefail
-          grep -q "const VERSION = '" sw.js
+          grep -q "const VERSION = '2026.08.03.16'" sw.js
           grep -q '/SiteMinadental/' manifest.webmanifest
-          grep -q 'apple-touch-icon-180.png' index.html
+          grep -q 'apple-touch-icon-v2026080314.png' index.html
           grep -q 'beforeinstallprompt' pwa.js
           grep -q 'notificationclick' sw.js
-          grep -q 'apple-touch-icon-v2026080314.png' pwa.js
+          grep -q 'update-manager.js' index.html
+          grep -q 'theme-motion.css' index.html
+          test "$(grep -c "controllerchange" pwa.js || true)" = '0'
+          test "$(grep -c "controllerchange" update-manager.js || true)" = '1'
 
       - name: Generate verified PWA icons from approved logo
         shell: bash
