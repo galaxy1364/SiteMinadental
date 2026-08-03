@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.13';
+const VERSION = '2026.08.03.14';
 const BASE = '/SiteMinadental/';
 const STATIC_CACHE = `mina-dental-static-${VERSION}`;
 const RUNTIME_CACHE = `mina-dental-runtime-${VERSION}`;
@@ -18,6 +18,9 @@ const CORE = [
   `${BASE}content-data.json`,
   `${BASE}clinic-config.json`,
   `${BASE}apple-touch-icon-180.png`,
+  `${BASE}apple-touch-icon.png`,
+  `${BASE}apple-touch-icon-precomposed.png`,
+  `${BASE}apple-touch-icon-v2026080314.png`,
   `${BASE}pwa-icon-192.png`,
   `${BASE}pwa-icon-512.png`,
   `${BASE}pwa-icon-maskable-512.png`,
@@ -119,8 +122,8 @@ self.addEventListener('push', event => {
   const title = payload.title || 'مینا دنتال';
   const options = {
     body: payload.body || 'یک اطلاعیه جدید از کلینیک دارید.',
-    icon: `${BASE}pwa-icon-192.png`,
-    badge: `${BASE}pwa-icon-192.png`,
+    icon: `${BASE}pwa-icon-192.png?v=2026080314`,
+    badge: `${BASE}pwa-icon-192.png?v=2026080314`,
     data: { url: payload.url || BASE },
     tag: payload.tag || 'mina-dental-notification',
     renotify: Boolean(payload.renotify),
