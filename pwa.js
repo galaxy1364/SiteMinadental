@@ -5,13 +5,47 @@
   const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
   const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
-  const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(OFFICIAL_MAP_URL)}&output=embed&hl=fa`;
   let deferredInstallPrompt = null;
   let installAttempted = false;
   let refreshing = false;
 
   const isStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  const ensureMapCardStyle = () => {
+    if (document.getElementById('mina-exact-map-style')) return;
+    const style = document.createElement('style');
+    style.id = 'mina-exact-map-style';
+    style.textContent = `
+      .mina-exact-map-card{display:flex;min-height:320px;width:100%;align-items:center;justify-content:center;text-decoration:none;direction:rtl;border-radius:inherit;background:linear-gradient(135deg,#ecfeff 0%,#f0fdfa 48%,#eff6ff 100%);position:relative;overflow:hidden}
+      .mina-exact-map-card:before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 25% 25%,rgba(13,148,136,.12),transparent 28%),radial-gradient(circle at 78% 72%,rgba(37,99,235,.10),transparent 26%)}
+      .mina-exact-map-card__content{position:relative;z-index:1;text-align:center;padding:28px 20px;color:#0f172a}
+      .mina-exact-map-card__pin{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;margin:0 auto 14px;background:#0d9488;color:#fff;font-size:36px;box-shadow:0 16px 36px rgba(13,148,136,.28)}
+      .mina-exact-map-card__title{font-weight:900;font-size:18px;line-height:1.8;margin:0 0 6px}
+      .mina-exact-map-card__address{font-size:13px;color:#475569;line-height:1.9;margin:0 0 14px}
+      .mina-exact-map-card__cta{display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:#0d9488;color:#fff;padding:11px 18px;font-weight:800;font-size:13px}
+    `;
+    document.head.appendChild(style);
+  };
+
+  const replaceAmbiguousEmbeddedMap = frame => {
+    if (frame.dataset.minaExactMapReplaced === '1') return;
+    ensureMapCardStyle();
+    const link = document.createElement('a');
+    link.className = 'mina-exact-map-card';
+    link.href = OFFICIAL_MAP_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.setAttribute('aria-label', `باز کردن موقعیت زنده و دقیق ${PLACE_TITLE} در گوگل مپ`);
+    link.innerHTML = `<div class="mina-exact-map-card__content"><div class="mina-exact-map-card__pin">⌖</div><p class="mina-exact-map-card__title">${PLACE_TITLE}</p><p class="mina-exact-map-card__address">${LOCATION_TEXT}</p><span class="mina-exact-map-card__cta">باز کردن لوکیشن زنده و دقیق</span></div>`;
+    const parent = frame.parentElement;
+    if (parent) {
+      const rect = frame.getBoundingClientRect();
+      if (rect.height > 0) link.style.minHeight = `${Math.max(280, Math.round(rect.height))}px`;
+      frame.dataset.minaExactMapReplaced = '1';
+      frame.replaceWith(link);
+    }
+  };
 
   const repairLocation = () => {
     document.querySelectorAll('a[href]').forEach(anchor => {
@@ -21,18 +55,15 @@
         anchor.href = OFFICIAL_MAP_URL;
         anchor.target = '_blank';
         anchor.rel = 'noopener noreferrer';
-        anchor.setAttribute('aria-label', `باز کردن موقعیت رسمی ${PLACE_TITLE} در گوگل مپ`);
+        anchor.setAttribute('aria-label', `باز کردن موقعیت زنده و دقیق ${PLACE_TITLE} در گوگل مپ`);
       }
     });
 
     document.querySelectorAll('iframe').forEach(frame => {
       const src = frame.getAttribute('src') || '';
       const title = frame.getAttribute('title') || '';
-      if (/google.*maps|maps\.google|map/i.test(src) || /نقشه|map/i.test(title)) {
-        if (frame.getAttribute('src') !== MAP_EMBED_URL) frame.setAttribute('src', MAP_EMBED_URL);
-        frame.title = `موقعیت رسمی ${PLACE_TITLE}، ${LOCATION_TEXT}`;
-        frame.loading = 'eager';
-        frame.referrerPolicy = 'no-referrer-when-downgrade';
+      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|map/i.test(src) || /نقشه|map/i.test(title)) {
+        replaceAmbiguousEmbeddedMap(frame);
       }
     });
 
