@@ -2,6 +2,8 @@
   'use strict';
 
   const BASE = '/SiteMinadental/';
+  const ICON_VERSION = '2026080314';
+  const APPLE_ICON_URL = `${BASE}apple-touch-icon-v${ICON_VERSION}.png`;
   const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
   const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
@@ -13,6 +15,33 @@
 
   const isStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  const ensureAppleInstallMetadata = () => {
+    const setLink = (rel, href, sizes = '') => {
+      let node = document.head.querySelector(`link[rel="${rel}"]`);
+      if (!node) {
+        node = document.createElement('link');
+        node.rel = rel;
+        document.head.appendChild(node);
+      }
+      node.href = href;
+      if (sizes) node.sizes = sizes;
+    };
+
+    setLink('apple-touch-icon', APPLE_ICON_URL, '180x180');
+    setLink('apple-touch-icon-precomposed', APPLE_ICON_URL, '180x180');
+    setLink('shortcut icon', `${BASE}pwa-icon-192.png?v=${ICON_VERSION}`);
+
+    let appleTitle = document.head.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (!appleTitle) {
+      appleTitle = document.createElement('meta');
+      appleTitle.name = 'apple-mobile-web-app-title';
+      document.head.appendChild(appleTitle);
+    }
+    appleTitle.content = 'مینا دنتال';
+  };
+
+  ensureAppleInstallMetadata();
 
   const ensureMapCardStyle = () => {
     if (document.getElementById('mina-exact-map-style')) return;
