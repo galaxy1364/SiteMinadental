@@ -5,9 +5,11 @@
   const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
   const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
+  const MAP_LINK_PATTERN = /google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i;
+  const MAP_LABEL_PATTERN = /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps|مسیریابی|نشان|بلد|ویز/i;
   let deferredInstallPrompt = null;
-  let installAttempted = false;
   let refreshing = false;
+  let repairScheduled = false;
 
   const isStandalone = () =>
     window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -29,7 +31,7 @@
   };
 
   const replaceAmbiguousEmbeddedMap = frame => {
-    if (frame.dataset.minaExactMapReplaced === '1') return;
+    if (!(frame instanceof HTMLIFrameElement) || frame.dataset.minaExactMapReplaced === '1') return;
     ensureMapCardStyle();
     const link = document.createElement('a');
     link.className = 'mina-exact-map-card';
@@ -37,58 +39,74 @@
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.setAttribute('aria-label', `باز کردن موقعیت زنده و دقیق ${PLACE_TITLE} در گوگل مپ`);
-    link.innerHTML = `<div class="mina-exact-map-card__content"><div class="mina-exact-map-card__pin">⌖</div><p class="mina-exact-map-card__title">${PLACE_TITLE}</p><p class="mina-exact-map-card__address">${LOCATION_TEXT}</p><span class="mina-exact-map-card__cta">باز کردن لوکیشن زنده و دقیق</span></div>`;
-    const parent = frame.parentElement;
-    if (parent) {
-      const rect = frame.getBoundingClientRect();
-      if (rect.height > 0) link.style.minHeight = `${Math.max(280, Math.round(rect.height))}px`;
-      frame.dataset.minaExactMapReplaced = '1';
-      frame.replaceWith(link);
-    }
+    link.innerHTML = `<div class="mina-exact-map-card__content"><div class="mina-exact-map-card__pin" aria-hidden="true">⌖</div><p class="mina-exact-map-card__title">${PLACE_TITLE}</p><p class="mina-exact-map-card__address">${LOCATION_TEXT}</p><span class="mina-exact-map-card__cta">باز کردن لوکیشن زنده و دقیق</span></div>`;
+    const rect = frame.getBoundingClientRect();
+    if (rect.height > 0) link.style.minHeight = `${Math.max(280, Math.round(rect.height))}px`;
+    frame.dataset.minaExactMapReplaced = '1';
+    frame.replaceWith(link);
   };
 
-  const repairLocation = () => {
-    document.querySelectorAll('a[href]').forEach(anchor => {
-      const href = anchor.getAttribute('href') || '';
-      const label = (anchor.textContent || '').trim();
-      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i.test(href) || /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps|مسیریابی|نشان|بلد|ویز/i.test(label)) {
-        anchor.href = OFFICIAL_MAP_URL;
-        anchor.target = '_blank';
-        anchor.rel = 'noopener noreferrer';
-        anchor.setAttribute('aria-label', `باز کردن موقعیت زنده و دقیق ${PLACE_TITLE} در گوگل مپ`);
-      }
-    });
+  const repairAnchor = anchor => {
+    if (!(anchor instanceof HTMLAnchorElement)) return;
+    const href = anchor.getAttribute('href') || '';
+    const label = (anchor.textContent || '').trim();
+    if (!MAP_LINK_PATTERN.test(href) && !MAP_LABEL_PATTERN.test(label)) return;
+    anchor.href = OFFICIAL_MAP_URL;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.setAttribute('aria-label', `باز کردن موقعیت زنده و دقیق ${PLACE_TITLE} در گوگل مپ`);
+  };
 
-    document.querySelectorAll('iframe').forEach(frame => {
+  const repairTextNode = node => {
+    if (!(node instanceof Text) || !node.nodeValue) return;
+    if (!/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J|چیتگر شمالی/.test(node.nodeValue)) return;
+    node.nodeValue = node.nodeValue
+      .replace(/خیابان امیرکبیر،\s*گلها،\s*نبش یاس/g, LOCATION_TEXT)
+      .replace(/استان تهران،\s*تهران،\s*منطقه ۲۱،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
+      .replace(/بلوار گل‌ها،\s*Plus Code:\s*P6XX\+G5J/g, LOCATION_TEXT)
+      .replace(/چیتگر(?:-e)?\s*شمالی/gi, 'بلوار گل‌ها، یاس اول')
+      .replace(/منطقه\s*۲۲/g, 'منطقه ۲۱')
+      .replace(/منطقه\s*22/g, 'منطقه ۲۱');
+  };
+
+  const repairSubtree = root => {
+    if (!(root instanceof Element) && root !== document) return;
+    root.querySelectorAll?.('a[href]').forEach(repairAnchor);
+    root.querySelectorAll?.('iframe').forEach(frame => {
       const src = frame.getAttribute('src') || '';
       const title = frame.getAttribute('title') || '';
-      if (/google.*maps|maps\.google|maps\.app\.goo\.gl|map/i.test(src) || /نقشه|map/i.test(title)) {
-        replaceAmbiguousEmbeddedMap(frame);
-      }
+      if (MAP_LINK_PATTERN.test(src) || /نقشه|map/i.test(title)) replaceAmbiguousEmbeddedMap(frame);
     });
-
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let node;
-    while ((node = walker.nextNode())) {
-      if (!node.nodeValue || !/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J|چیتگر شمالی/.test(node.nodeValue)) continue;
-      node.nodeValue = node.nodeValue
-        .replace(/خیابان امیرکبیر،\s*گلها،\s*نبش یاس/g, LOCATION_TEXT)
-        .replace(/استان تهران،\s*تهران،\s*منطقه ۲۱،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
-        .replace(/بلوار گل‌ها،\s*Plus Code:\s*P6XX\+G5J/g, LOCATION_TEXT)
-        .replace(/چیتگر(?:-e)?\s*شمالی/gi, 'بلوار گل‌ها، یاس اول')
-        .replace(/منطقه\s*۲۲/g, 'منطقه ۲۱')
-        .replace(/منطقه\s*22/g, 'منطقه ۲۱');
-    }
+    while ((node = walker.nextNode())) repairTextNode(node);
   };
 
-  const observer = new MutationObserver(repairLocation);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  window.addEventListener('DOMContentLoaded', repairLocation, { once: true });
-  window.addEventListener('load', repairLocation, { once: true });
+  const scheduleRepair = root => {
+    if (repairScheduled) return;
+    repairScheduled = true;
+    requestAnimationFrame(() => {
+      repairScheduled = false;
+      repairSubtree(root || document);
+    });
+  };
+
+  const observer = new MutationObserver(records => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node instanceof Element) repairSubtree(node);
+        else if (node instanceof Text) repairTextNode(node);
+      }
+    }
+  });
+
+  const startLocationRepair = () => {
+    repairSubtree(document);
+    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  };
 
   const requestInstall = async () => {
-    if (!deferredInstallPrompt || installAttempted || isStandalone()) return false;
-    installAttempted = true;
+    if (!deferredInstallPrompt || isStandalone()) return false;
     const promptEvent = deferredInstallPrompt;
     deferredInstallPrompt = null;
     try {
@@ -97,35 +115,31 @@
       window.dispatchEvent(new CustomEvent('mina:pwa-install-result', { detail: choice }));
       return choice?.outcome === 'accepted';
     } catch (error) {
-      installAttempted = false;
       deferredInstallPrompt = promptEvent;
       console.warn('PWA install prompt was not completed.', error);
       return false;
     }
   };
 
-  const armNextInteraction = () => {
-    const trigger = () => requestInstall();
-    window.addEventListener('pointerup', trigger, { once: true, passive: true, capture: true });
-    window.addEventListener('keydown', trigger, { once: true, capture: true });
-  };
-
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
     deferredInstallPrompt = event;
     window.dispatchEvent(new CustomEvent('mina:pwa-install-ready'));
-    requestInstall().then(accepted => {
-      if (!accepted && deferredInstallPrompt) armNextInteraction();
-    });
   });
 
   window.addEventListener('appinstalled', () => {
     deferredInstallPrompt = null;
-    installAttempted = true;
     window.dispatchEvent(new CustomEvent('mina:pwa-installed'));
   });
 
   window.minaDentalInstall = requestInstall;
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startLocationRepair, { once: true });
+  } else {
+    startLocationRepair();
+  }
+  window.addEventListener('load', () => scheduleRepair(document), { once: true });
 
   if (!('serviceWorker' in navigator)) return;
 
@@ -146,7 +160,7 @@
       });
       const checkForUpdate = () => registration.update().catch(() => {});
       checkForUpdate();
-      window.setInterval(checkForUpdate, 15 * 60 * 1000);
+      window.setInterval(checkForUpdate, 30 * 60 * 1000);
       window.addEventListener('online', checkForUpdate);
       window.addEventListener('pageshow', checkForUpdate);
       document.addEventListener('visibilitychange', () => {
@@ -154,6 +168,7 @@
       });
     } catch (error) {
       console.error('Service Worker registration failed.', error);
+      window.dispatchEvent(new CustomEvent('mina:runtime-error', { detail: { source: 'service-worker', message: String(error?.message || error) } }));
     }
   });
 
