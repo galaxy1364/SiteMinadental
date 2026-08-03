@@ -1,4 +1,4 @@
-name: Deploy exact Kimi site to GitHub Pages
+name: Validate and deploy Mina Dental site
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  validate-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -28,20 +28,57 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f index.html
-          test -f assets/index-ClUC_4GS.js
-          test -f assets/index-SCz4HByz.css
-          test -f hero-bg.jpg
-          test -f doctor-portrait.jpg
-          test -f pwa-icon.png
-          test -f manifest.webmanifest
-          test -f sw.js
+          required=(
+            index.html manifest.webmanifest sw.js pwa.js site-core.js
+            booking-engine.js install-promotion.js ai-assistant.js
+            content-hub.js content-upgrade.js clinic-config.json content-data.json
+            assets/index-ClUC_4GS.js assets/index-SCz4HByz.css
+            hero-bg.jpg doctor-portrait.jpg clinic-interior.jpg pwa-icon.png
+          )
+          for file in "${required[@]}"; do
+            test -s "$file" || { echo "Missing or empty: $file"; exit 1; }
+          done
 
-      - name: Generate verified PWA icons from the approved logo
+      - name: Validate JSON contracts
         shell: bash
         run: |
           set -euo pipefail
-          # Preserve the logo proportions and centre it on a square background.
+          jq -e . manifest.webmanifest >/dev/null
+          jq -e . clinic-config.json >/dev/null
+          jq -e . content-data.json >/dev/null
+          jq -e '.start_url and .scope and (.icons | length >= 3)' manifest.webmanifest >/dev/null
+          jq -e '.booking and .holidays and .integration' clinic-config.json >/dev/null
+
+      - name: Validate JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in sw.js pwa.js site-core.js booking-engine.js install-promotion.js ai-assistant.js content-hub.js content-upgrade.js; do
+            node --check "$file"
+          done
+
+      - name: Reject stale or unsafe location references
+        shell: bash
+        run: |
+          set -euo pipefail
+          ! grep -RInE 'P6XX\+G5J|maps\.app\.goo\.gl/UQE1itDfMgwCGxMu5|35\.7488375|51\.247890625' \
+            --exclude-dir=.git --exclude='*.md' .
+          grep -RIl 'maps.app.goo.gl/giT47654NMPreoPt5' pwa.js site-core.js index.html >/dev/null
+
+      - name: Verify PWA contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "const VERSION = '" sw.js
+          grep -q '/SiteMinadental/' manifest.webmanifest
+          grep -q 'apple-touch-icon-180.png' index.html
+          grep -q 'beforeinstallprompt' pwa.js
+          grep -q 'notificationclick' sw.js
+
+      - name: Generate verified PWA icons from approved logo
+        shell: bash
+        run: |
+          set -euo pipefail
           convert pwa-icon.png -auto-orient -strip -resize 180x180 -gravity center -background '#0d5f5b' -extent 180x180 apple-touch-icon-180.png
           convert pwa-icon.png -auto-orient -strip -resize 192x192 -gravity center -background '#0d5f5b' -extent 192x192 pwa-icon-192.png
           convert pwa-icon.png -auto-orient -strip -resize 512x512 -gravity center -background '#0d5f5b' -extent 512x512 pwa-icon-512.png
@@ -50,12 +87,20 @@ jobs:
           test "$(identify -format '%wx%h' pwa-icon-192.png)" = '192x192'
           test "$(identify -format '%wx%h' pwa-icon-512.png)" = '512x512'
           test "$(identify -format '%wx%h' pwa-icon-maskable-512.png)" = '512x512'
-          identify -format '%m %wx%h\n' apple-touch-icon-180.png pwa-icon-192.png pwa-icon-512.png pwa-icon-maskable-512.png
+
+      - name: Verify generated icon files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in apple-touch-icon-180.png pwa-icon-192.png pwa-icon-512.png pwa-icon-maskable-512.png; do
+            test -s "$file"
+            identify "$file" >/dev/null
+          done
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload static site artifact
+      - name: Upload validated static site artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
