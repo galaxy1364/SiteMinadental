@@ -4,13 +4,12 @@
   const BASE = '/SiteMinadental/';
   const ICON_VERSION = '2026080314';
   const APPLE_ICON_URL = `${BASE}apple-touch-icon-v${ICON_VERSION}.png`;
-  const LOCATION_TEXT = 'تهران، منطقه ۲۱، بلوار گل‌ها، محدوده یاس اول';
+  const LOCATION_TEXT = 'تهران، منطقه ۲۲، بلوار گل‌ها، محدوده یاس اول';
   const PLACE_TITLE = 'دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی';
   const OFFICIAL_MAP_URL = 'https://maps.app.goo.gl/giT47654NMPreoPt5?g_st=ic';
   const MAP_LINK_PATTERN = /google.*maps|maps\.google|maps\.app\.goo\.gl|neshan|balad|waze/i;
   const MAP_LABEL_PATTERN = /گوگل\s*مپ|لوکیشن|موقعیت|باز کردن در Maps|مسیریابی|نشان|بلد|ویز/i;
   let deferredInstallPrompt = null;
-  let refreshing = false;
   let repairScheduled = false;
 
   const isStandalone = () =>
@@ -48,12 +47,12 @@
     const style = document.createElement('style');
     style.id = 'mina-exact-map-style';
     style.textContent = `
-      .mina-exact-map-card{display:flex;min-height:320px;width:100%;align-items:center;justify-content:center;text-decoration:none;direction:rtl;border-radius:inherit;background:linear-gradient(135deg,#ecfeff 0%,#f0fdfa 48%,#eff6ff 100%);position:relative;overflow:hidden}
-      .mina-exact-map-card:before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 25% 25%,rgba(13,148,136,.12),transparent 28%),radial-gradient(circle at 78% 72%,rgba(37,99,235,.10),transparent 26%)}
+      .mina-exact-map-card{display:flex;min-height:320px;width:100%;align-items:center;justify-content:center;text-decoration:none;direction:rtl;border-radius:inherit;background:linear-gradient(135deg,rgba(183,201,168,.78) 0%,rgba(147,197,253,.55) 46%,rgba(167,139,250,.48) 100%);position:relative;overflow:hidden}
+      .mina-exact-map-card:before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 25% 25%,rgba(13,148,136,.18),transparent 28%),radial-gradient(circle at 78% 72%,rgba(249,168,212,.18),transparent 26%)}
       .mina-exact-map-card__content{position:relative;z-index:1;text-align:center;padding:28px 20px;color:#0f172a}
       .mina-exact-map-card__pin{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;margin:0 auto 14px;background:#0d9488;color:#fff;font-size:36px;box-shadow:0 16px 36px rgba(13,148,136,.28)}
       .mina-exact-map-card__title{font-weight:900;font-size:18px;line-height:1.8;margin:0 0 6px}
-      .mina-exact-map-card__address{font-size:13px;color:#475569;line-height:1.9;margin:0 0 14px}
+      .mina-exact-map-card__address{font-size:13px;color:#334155;line-height:1.9;margin:0 0 14px}
       .mina-exact-map-card__cta{display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:#0d9488;color:#fff;padding:11px 18px;font-weight:800;font-size:13px}
     `;
     document.head.appendChild(style);
@@ -88,14 +87,14 @@
 
   const repairTextNode = node => {
     if (!(node instanceof Text) || !node.nodeValue) return;
-    if (!/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۲|22)|P6XX\+G5J|چیتگر شمالی/.test(node.nodeValue)) return;
+    if (!/امیرکبیر|گلها|گل‌ها|منطقه\s*(۲۱|21|۲۲|22)|P6XX\+G5J|چیتگر شمالی/.test(node.nodeValue)) return;
     node.nodeValue = node.nodeValue
       .replace(/خیابان امیرکبیر،\s*گلها،\s*نبش یاس/g, LOCATION_TEXT)
-      .replace(/استان تهران،\s*تهران،\s*منطقه ۲۱،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
+      .replace(/استان تهران،\s*تهران،\s*منطقه\s*(?:۲۱|21|۲۲|22)،\s*بلوار گل‌ها،\s*P6XX\+G5J/g, LOCATION_TEXT)
       .replace(/بلوار گل‌ها،\s*Plus Code:\s*P6XX\+G5J/g, LOCATION_TEXT)
       .replace(/چیتگر(?:-e)?\s*شمالی/gi, 'بلوار گل‌ها، یاس اول')
-      .replace(/منطقه\s*۲۲/g, 'منطقه ۲۱')
-      .replace(/منطقه\s*22/g, 'منطقه ۲۱');
+      .replace(/منطقه\s*۲۱/g, 'منطقه ۲۲')
+      .replace(/منطقه\s*21/g, 'منطقه ۲۲');
   };
 
   const repairSubtree = root => {
@@ -178,15 +177,6 @@
         scope: BASE,
         updateViaCache: 'none'
       });
-      const activateWaitingWorker = worker => worker?.postMessage({ type: 'SKIP_WAITING' });
-      if (registration.waiting) activateWaitingWorker(registration.waiting);
-      registration.addEventListener('updatefound', () => {
-        const worker = registration.installing;
-        if (!worker) return;
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) activateWaitingWorker(worker);
-        });
-      });
       const checkForUpdate = () => registration.update().catch(() => {});
       checkForUpdate();
       window.setInterval(checkForUpdate, 30 * 60 * 1000);
@@ -199,11 +189,5 @@
       console.error('Service Worker registration failed.', error);
       window.dispatchEvent(new CustomEvent('mina:runtime-error', { detail: { source: 'service-worker', message: String(error?.message || error) } }));
     }
-  });
-
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
   });
 })();
