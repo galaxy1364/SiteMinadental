@@ -57,13 +57,14 @@ jobs:
             node --check "$file"
           done
 
-      - name: Reject stale or unsafe location references
+      - name: Validate authoritative location runtime
         shell: bash
         run: |
           set -euo pipefail
           ! grep -RInE 'P6XX\+G5J|maps\.app\.goo\.gl/UQE1itDfMgwCGxMu5|35\.7488375|51\.247890625' \
             --exclude-dir=.git --exclude='*.md' .
-          grep -RIl 'maps.app.goo.gl/giT47654NMPreoPt5' pwa.js site-core.js index.html >/dev/null
+          grep -q 'maps.app.goo.gl/giT47654NMPreoPt5' pwa.js
+          grep -q 'maps.app.goo.gl/giT47654NMPreoPt5' site-core.js
 
       - name: Verify PWA contract
         shell: bash
