@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.12';
+const VERSION = '2026.08.03.13';
 const BASE = '/SiteMinadental/';
 const STATIC_CACHE = `mina-dental-static-${VERSION}`;
 const RUNTIME_CACHE = `mina-dental-runtime-${VERSION}`;
@@ -146,7 +146,5 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('message', event => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
   if (event.data?.type === 'GET_VERSION') event.source?.postMessage({ type: 'VERSION', version: VERSION });
-  if (event.data?.type === 'CLEAR_RUNTIME_CACHE') {
-    event.waitUntil(caches.delete(RUNTIME_CACHE));
-  }
+  if (event.data?.type === 'CLEAR_RUNTIME_CACHE') event.waitUntil(caches.delete(RUNTIME_CACHE));
 });
