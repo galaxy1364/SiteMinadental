@@ -1,4 +1,4 @@
-const VERSION = '2026.08.03.14';
+const VERSION = '2026.08.03.15';
 const BASE = '/SiteMinadental/';
 const STATIC_CACHE = `mina-dental-static-${VERSION}`;
 const RUNTIME_CACHE = `mina-dental-runtime-${VERSION}`;
@@ -10,6 +10,7 @@ const CORE = [
   `${BASE}manifest.webmanifest`,
   `${BASE}pwa.js`,
   `${BASE}site-core.js`,
+  `${BASE}update-manager.js`,
   `${BASE}booking-engine.js`,
   `${BASE}install-promotion.js`,
   `${BASE}ai-assistant.js`,
@@ -42,9 +43,7 @@ const OPTIONAL = [
 ];
 
 const putIfValid = async (cache, request, response) => {
-  if (response && response.ok && response.type !== 'opaque') {
-    await cache.put(request, response.clone());
-  }
+  if (response && response.ok && response.type !== 'opaque') await cache.put(request, response.clone());
   return response;
 };
 
@@ -62,7 +61,6 @@ self.addEventListener('install', event => {
       const response = await fetch(url, { cache: 'reload' });
       if (response.ok) await cache.put(url, response);
     }));
-    await self.skipWaiting();
   })());
 });
 
@@ -102,18 +100,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(BASE)) return;
 
-  if (event.request.mode === 'navigate') {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-
-  const dynamic = /clinic-config\.json$|content-data\.json$|manifest\.webmanifest$/.test(url.pathname);
-  if (dynamic) {
-    event.respondWith(networkFirst(event.request));
-    return;
-  }
-
-  event.respondWith(staleWhileRevalidate(event.request));
+  if (event.request.mode === 'navigate') return void event.respondWith(networkFirst(event.request));
+  const dynamic = /clinic-config\.json$|content-data\.json$|manifest\.webmanifest$|update-manager\.js$/.test(url.pathname);
+  event.respondWith(dynamic ? networkFirst(event.request) : staleWhileRevalidate(event.request));
 });
 
 self.addEventListener('push', event => {
