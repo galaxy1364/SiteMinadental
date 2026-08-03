@@ -1,14 +1,14 @@
 {
   "id": "/SiteMinadental/",
-  "name": "کلینیک دندانپزشکی دکتر مینا مازندرانی",
+  "name": "دندانپزشکی تخصصی صدف — دکتر مینا مازندرانی",
   "short_name": "مینا دنتال",
-  "description": "وب‌اپ رسمی کلینیک دندانپزشکی دکتر مینا مازندرانی در منطقه ۲۱ تهران",
-  "lang": "fa",
+  "description": "وب‌اپ رسمی دندانپزشکی تخصصی صدف و کلینیک دکتر مینا مازندرانی در منطقه ۲۱ تهران",
+  "lang": "fa-IR",
   "dir": "rtl",
   "start_url": "/SiteMinadental/?source=pwa",
   "scope": "/SiteMinadental/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#ffffff",
   "theme_color": "#0d9488",
@@ -16,19 +16,19 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./pwa-icon-192.png",
+      "src": "/SiteMinadental/pwa-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./pwa-icon-512.png",
+      "src": "/SiteMinadental/pwa-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./pwa-icon-maskable-512.png",
+      "src": "/SiteMinadental/pwa-icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -38,14 +38,16 @@
     {
       "name": "رزرو نوبت",
       "short_name": "رزرو",
-      "url": "/SiteMinadental/#appointment?source=pwa-shortcut",
-      "icons": [{"src": "./pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+      "description": "رفتن مستقیم به فرم درخواست نوبت",
+      "url": "/SiteMinadental/?source=pwa-shortcut#appointment",
+      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
     },
     {
       "name": "تماس با کلینیک",
       "short_name": "تماس",
-      "url": "/SiteMinadental/#contact?source=pwa-shortcut",
-      "icons": [{"src": "./pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
+      "description": "رفتن مستقیم به اطلاعات تماس کلینیک",
+      "url": "/SiteMinadental/?source=pwa-shortcut#contact",
+      "icons": [{"src": "/SiteMinadental/pwa-icon-192.png", "sizes": "192x192", "type": "image/png"}]
     }
   ]
 }
