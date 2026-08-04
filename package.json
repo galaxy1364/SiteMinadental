@@ -1,13 +1,16 @@
 {
   "name": "mina-dental-enterprise",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "engines": {"node": ">=20"},
   "scripts": {
     "check": "tsc --noEmit",
-    "test": "node --test",
-    "db:migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql"
+    "test": "node --test test/*.test.mjs",
+    "test:architecture": "node --test test/architecture-contract.test.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:bootstrap": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f db/schema.sql && node scripts/migrate.mjs",
+    "verify": "npm run check && npm test"
   },
   "dependencies": {
     "@vercel/node": "^5.0.0",
