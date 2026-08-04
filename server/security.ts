@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { createHash, randomBytes } from 'node:crypto';
 import { pool } from './db.js';
 
 const secretValue = process.env.AUTH_SECRET || '';
@@ -11,16 +12,19 @@ export function requireConfiguredSecret() {
   if (secretValue.length < 32) throw new Error('AUTH_SECRET_NOT_CONFIGURED');
 }
 
-export async function createSession(userId: string, roles: string[], ipHash: string, userAgent: string) {
+const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+
+export async function createSession(userId: string, roles: string[], ipPrefix: string, userAgent: string) {
   requireConfiguredSecret();
+  const opaque = randomBytes(32).toString('base64url');
+  const tokenHash = sha256(opaque);
   const session = await pool.query<{ id: string }>(
-    `INSERT INTO user_session (user_id, token_hash, ip_hash, user_agent, expires_at)
-     VALUES ($1, encode(digest(gen_random_uuid()::text,'sha256'),'hex'), $2, $3, now() + interval '30 days')
-     RETURNING id`,
-    [userId, ipHash, userAgent.slice(0, 500)]
+    `INSERT INTO session_token (user_id, token_hash, user_agent_hash, ip_prefix, expires_at)
+     VALUES ($1,$2,$3,$4,now() + interval '30 days') RETURNING id`,
+    [userId, tokenHash, sha256(userAgent.slice(0, 500)), ipPrefix.slice(0, 64)]
   );
   const sessionId = session.rows[0].id;
-  const token = await new SignJWT({ roles, sid: sessionId })
+  const token = await new SignJWT({ roles, sid: sessionId, nonce: opaque })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
     .setIssuedAt()
@@ -39,11 +43,12 @@ export async function authenticate(req: VercelRequest): Promise<Actor> {
   const verified = await jwtVerify(token, secret, { algorithms: ['HS256'] });
   const userId = verified.payload.sub;
   const sessionId = String(verified.payload.sid || '');
+  const nonce = String(verified.payload.nonce || '');
   const roles = Array.isArray(verified.payload.roles) ? verified.payload.roles.map(String) : [];
-  if (!userId || !sessionId) throw new Error('INVALID_SESSION');
+  if (!userId || !sessionId || !nonce) throw new Error('INVALID_SESSION');
   const active = await pool.query(
-    `SELECT 1 FROM user_session WHERE id=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at > now()`,
-    [sessionId, userId]
+    `SELECT 1 FROM session_token WHERE id=$1 AND user_id=$2 AND token_hash=$3 AND revoked_at IS NULL AND expires_at > now()`,
+    [sessionId, userId, sha256(nonce)]
   );
   if (!active.rowCount) throw new Error('SESSION_REVOKED');
   return { userId, roles, sessionId };
@@ -56,13 +61,14 @@ export function requireRole(actor: Actor, allowed: string[]) {
 export async function rateLimit(key: string, limit: number, windowSeconds: number) {
   const result = await pool.query<{ allowed: boolean; remaining: number }>(
     `WITH upsert AS (
-       INSERT INTO rate_limit_bucket (bucket_key, window_started_at, hits)
-       VALUES ($1, date_trunc('second', now()), 1)
+       INSERT INTO rate_limit_bucket (bucket_key, window_started_at, hits, updated_at)
+       VALUES ($1, now(), 1, now())
        ON CONFLICT (bucket_key) DO UPDATE SET
          hits = CASE WHEN rate_limit_bucket.window_started_at < now() - make_interval(secs => $3)
                      THEN 1 ELSE rate_limit_bucket.hits + 1 END,
          window_started_at = CASE WHEN rate_limit_bucket.window_started_at < now() - make_interval(secs => $3)
-                                  THEN now() ELSE rate_limit_bucket.window_started_at END
+                                  THEN now() ELSE rate_limit_bucket.window_started_at END,
+         updated_at = now()
        RETURNING hits
      ) SELECT (hits <= $2) AS allowed, GREATEST($2-hits,0)::int AS remaining FROM upsert`,
     [key, limit, windowSeconds]
