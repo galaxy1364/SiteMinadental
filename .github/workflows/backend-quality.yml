@@ -1,0 +1,55 @@
+name: Backend quality gates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'server/**'
+      - 'db/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'vercel.json'
+      - '.github/workflows/backend-quality.yml'
+  pull_request:
+    paths:
+      - 'api/**'
+      - 'server/**'
+      - 'db/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - 'vercel.json'
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install --ignore-scripts
+      - name: TypeScript check
+        run: npm run check
+      - name: Validate deployment contract
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('vercel.json','utf8'))"
+          test -s db/schema.sql
+          grep -q 'appointment_no_overlap' db/schema.sql
+          grep -q 'FOR UPDATE SKIP LOCKED' api/cron/outbox.ts
+          grep -q 'aes-256-gcm' api/cron/backup.ts
+          grep -q 'CRON_SECRET' api/cron/outbox.ts
+          grep -q 'CRON_SECRET' api/cron/backup.ts
+      - name: Block committed secrets
+        run: |
+          ! grep -RInE '(sk-[A-Za-z0-9_-]{20,}|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|DATABASE_URL=postgres)' \
+            --exclude-dir=.git --exclude='package-lock.json' .
+      - name: Check public API fail-closed guards
+        run: |
+          grep -q 'BACKEND_NOT_CONFIGURED' api/bookings.ts
+          grep -q 'OTP_NOT_CONFIGURED' api/auth/request-otp.ts
+          grep -q 'PUSH_NOT_CONFIGURED' api/push/subscribe.ts
