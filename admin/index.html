@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <title>مرکز فرمان مینا دنتال</title>
+  <link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="topbar">
+      <div><p class="eyebrow">MINADENT ENTERPRISE</p><h1>مرکز فرمان کلینیک</h1></div>
+      <div class="actions"><span id="healthChip" class="chip pending">در حال بررسی…</span><button id="refreshBtn">بروزرسانی</button><button id="logoutBtn" class="ghost">خروج</button></div>
+    </header>
+    <section id="loginPanel" class="panel login">
+      <h2>ورود امن مدیر</h2><p>شماره موبایل مدیر را وارد کنید؛ ورود فقط با OTP و نقش مجاز انجام می‌شود.</p>
+      <form id="loginForm"><input id="mobile" inputmode="numeric" autocomplete="tel" placeholder="09xxxxxxxxx" required><button>ارسال کد</button></form>
+      <form id="verifyForm" hidden><input id="otp" inputmode="numeric" autocomplete="one-time-code" placeholder="کد تأیید" required><button>تأیید و ورود</button></form>
+      <p id="loginStatus" class="status"></p>
+    </section>
+    <section id="dashboard" hidden>
+      <nav class="tabs" aria-label="بخش‌های مدیریت">
+        <button data-tab="overview" class="active">نمای کلی</button><button data-tab="schedule">ظرفیت</button><button data-tab="queue">صف پیام</button><button data-tab="conversations">مکالمات</button><button data-tab="campaigns">کمپین</button><button data-tab="users">کاربران</button><button data-tab="backups">Backup</button>
+      </nav>
+      <section id="overview" class="tab active"><div id="metrics" class="metrics"></div><div id="services" class="grid"></div></section>
+      <section id="schedule" class="tab"><div class="sectionHead"><h2>ساعات و ظرفیت</h2><button data-action="newSchedule">افزودن برنامه</button></div><div id="scheduleList" class="tableWrap"></div></section>
+      <section id="queue" class="tab"><div class="sectionHead"><h2>صف پیام‌ها</h2><button data-action="retryFailed">ارسال مجدد شکست‌خورده‌ها</button></div><div id="queueList" class="tableWrap"></div></section>
+      <section id="conversations" class="tab"><div class="sectionHead"><h2>مکالمات و انتقال به منشی</h2></div><div id="conversationList" class="tableWrap"></div></section>
+      <section id="campaigns" class="tab"><div class="sectionHead"><h2>تخفیف و کمپین</h2><button data-action="newCampaign">کمپین جدید</button></div><div id="campaignList" class="tableWrap"></div></section>
+      <section id="users" class="tab"><div class="sectionHead"><h2>کاربران و نقش‌ها</h2></div><div id="userList" class="tableWrap"></div></section>
+      <section id="backups" class="tab"><div class="sectionHead"><h2>Backup و آزمون Restore</h2><button data-action="verifyBackup">آزمون آخرین Backup</button></div><div id="backupList" class="tableWrap"></div></section>
+    </section>
+  </main>
+  <dialog id="editor"><form method="dialog"><button class="close" value="cancel">×</button><div id="editorBody"></div></form></dialog>
+  <script type="module" src="./admin.js"></script>
+</body>
+</html>
