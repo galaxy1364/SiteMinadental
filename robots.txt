@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://galaxy1364.github.io/SiteMinadental/sitemap.xml
