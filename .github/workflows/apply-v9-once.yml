@@ -1,0 +1,62 @@
+name: Apply MinaDentalClinic Enterprise V9 once
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/apply-v9-once.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: minadentalclinic-v9-apply
+  cancel-in-progress: false
+
+jobs:
+  verify-and-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout staged main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact V9 runtime archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive='.v9stage/runtime.tar.xz'
+          test -f "$archive"
+          echo '691b5f54cf8984d46dfeb1bd7703b0956cb44cd17ad06dd78303ee6a158b87ab  .v9stage/runtime.tar.xz' | sha256sum -c -
+          rm -rf /tmp/v9-site
+          mkdir -p /tmp/v9-site
+          tar -xJf "$archive" -C /tmp/v9-site
+          test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
+          for file in index.html _worker.js sw.js version.json admin.html portal/index.html assets/css/site.css assets/js/site.js assets/js/admin.js assets/js/portal.js assets/js/status.js status/index.html safety/dental-emergency/index.html tools/treatment-comparison/index.html; do
+            test -f "/tmp/v9-site/$file"
+          done
+          grep -q '2026.08.30.9' /tmp/v9-site/version.json
+          grep -q 'enterprise-v9' /tmp/v9-site/version.json
+          grep -q 'https://minadentalclinic.ir/' /tmp/v9-site/index.html
+          if grep -R -n -F '2026.08.05.1' /tmp/v9-site; then exit 1; fi
+          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' /tmp/v9-site; then exit 1; fi
+          node --check /tmp/v9-site/_worker.js
+          node --check /tmp/v9-site/sw.js
+          node --check /tmp/v9-site/assets/js/site.js
+          node --check /tmp/v9-site/assets/js/admin.js
+          node --check /tmp/v9-site/assets/js/portal.js
+          node --check /tmp/v9-site/assets/js/status.js
+
+      - name: Replace old root atomically in commit workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/v9-site/. .
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Deploy MinaDentalClinic Enterprise V9 code-hardened'
+          git push origin HEAD:main
