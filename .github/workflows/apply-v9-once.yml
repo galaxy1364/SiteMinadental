@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - '.github/workflows/apply-v9-once.yml'
+      - '.v9latest/part-*.txt'
+      - '.v9latest/V9_RUNTIME_SHA256SUMS.txt'
 
 permissions:
   contents: write
@@ -23,33 +25,57 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify exact V9 runtime archive
+      - name: Assemble staged runtime when complete
+        id: assemble
         shell: bash
         run: |
           set -euo pipefail
-          archive='.v9stage/runtime.tar.xz'
-          test -f "$archive"
-          echo 'f9bf8e9e5dd345be3a335721b27e5ac90ed804d17633d154c90b314399d18cf6  .v9stage/runtime.tar.xz' | sha256sum -c -
+          mapfile -t parts < <(find .v9latest -maxdepth 1 -type f -name 'part-*.txt' | sort)
+          if [ "${#parts[@]}" -eq 0 ]; then
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          cat "${parts[@]}" | tr -d '\r\n' > /tmp/v9-runtime.b64
+          if ! base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz 2>/dev/null; then
+            echo 'Staging is not complete yet (base64 incomplete).'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! xz -t /tmp/v9-runtime.tar.xz 2>/dev/null; then
+            echo 'Staging is not complete yet (xz stream incomplete).'
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'ready=true' >> "$GITHUB_OUTPUT"
+
+      - name: Verify exact V9 runtime content
+        if: steps.assemble.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           rm -rf /tmp/v9-site
           mkdir -p /tmp/v9-site
-          tar -xJf "$archive" -C /tmp/v9-site
+          tar -xJf /tmp/v9-runtime.tar.xz -C /tmp/v9-site
           test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
+          cd /tmp/v9-site
+          sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
           for file in index.html _worker.js sw.js version.json admin.html portal/index.html assets/css/site.css assets/js/site.js assets/js/admin.js assets/js/portal.js assets/js/status.js status/index.html safety/dental-emergency/index.html tools/treatment-comparison/index.html; do
-            test -f "/tmp/v9-site/$file"
+            test -f "$file"
           done
-          grep -q '2026.08.30.9' /tmp/v9-site/version.json
-          grep -q 'enterprise-v9' /tmp/v9-site/version.json
-          grep -q 'https://minadentalclinic.ir/' /tmp/v9-site/index.html
-          if grep -R -n -F '2026.08.05.1' /tmp/v9-site; then exit 1; fi
-          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' /tmp/v9-site; then exit 1; fi
-          node --check /tmp/v9-site/_worker.js
-          node --check /tmp/v9-site/sw.js
-          node --check /tmp/v9-site/assets/js/site.js
-          node --check /tmp/v9-site/assets/js/admin.js
-          node --check /tmp/v9-site/assets/js/portal.js
-          node --check /tmp/v9-site/assets/js/status.js
+          grep -q '2026.08.30.9' version.json
+          grep -q 'enterprise-v9' version.json
+          grep -q 'https://minadentalclinic.ir/' index.html
+          if grep -R -n -F '2026.08.05.1' .; then exit 1; fi
+          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' .; then exit 1; fi
+          node --check _worker.js
+          node --check sw.js
+          node --check assets/js/site.js
+          node --check assets/js/admin.js
+          node --check assets/js/portal.js
+          node --check assets/js/status.js
 
       - name: Replace old root atomically in commit workspace
+        if: steps.assemble.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
