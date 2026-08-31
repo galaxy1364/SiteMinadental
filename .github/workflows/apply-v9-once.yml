@@ -29,8 +29,7 @@ jobs:
           set -euo pipefail
           archive='.v9stage/runtime.tar.xz'
           test -f "$archive"
-          echo 'Runtime archive SHA-256:'
-          sha256sum "$archive"
+          echo 'f9bf8e9e5dd345be3a335721b27e5ac90ed804d17633d154c90b314399d18cf6  .v9stage/runtime.tar.xz' | sha256sum -c -
           rm -rf /tmp/v9-site
           mkdir -p /tmp/v9-site
           tar -xJf "$archive" -C /tmp/v9-site
