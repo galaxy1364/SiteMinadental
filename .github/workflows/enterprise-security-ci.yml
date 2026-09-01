@@ -1,0 +1,180 @@
+name: Enterprise Security & Production Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.html'
+      - '**/*.js'
+      - '**/*.json'
+      - '**/*.xml'
+      - '**/*.txt'
+      - '_headers'
+      - '_redirects'
+      - '.well-known/security.txt'
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: enterprise-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-gate:
+    name: Production integrity gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify V9 production contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            index.html _worker.js sw.js version.json manifest.webmanifest
+            admin.html portal/index.html assets/css/site.css assets/js/site.js
+            assets/js/admin.js assets/js/portal.js assets/js/status.js
+            status/index.html safety/dental-emergency/index.html
+            tools/treatment-comparison/index.html robots.txt sitemap.xml _headers
+          )
+          for file in "${required[@]}"; do test -f "$file"; done
+
+          grep -q '2026.08.30.9' version.json
+          grep -q 'enterprise-v9' version.json
+          grep -q 'https://minadentalclinic.ir/' index.html
+
+          if grep -R -n -F '2026.08.05.1' --exclude-dir=.git --exclude-dir=.github .; then
+            echo 'Legacy V8 version found in production runtime.' >&2
+            exit 1
+          fi
+          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' --exclude-dir=.git --exclude-dir=.github .; then
+            echo 'Legacy GitHub Pages canonical found.' >&2
+            exit 1
+          fi
+          if grep -R -n -E "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" --exclude-dir=.git --exclude-dir=.github .; then
+            echo 'Potential server secret in public runtime.' >&2
+            exit 1
+          fi
+
+          node --check _worker.js
+          node --check sw.js
+          node --check assets/js/site.js
+          node --check assets/js/admin.js
+          node --check assets/js/portal.js
+          node --check assets/js/status.js
+
+      - name: Verify security headers and private surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'X-Content-Type-Options: nosniff' _headers
+          grep -q 'Referrer-Policy: strict-origin-when-cross-origin' _headers
+          grep -q 'Strict-Transport-Security:' _headers
+          grep -q 'Content-Security-Policy:' _headers
+          grep -q "object-src 'none'" _headers
+          grep -q "base-uri 'self'" _headers
+          grep -q "frame-ancestors 'self'" _headers
+          if grep -q "unsafe-eval\|unsafe-inline" _headers; then
+            echo 'Unsafe CSP directive detected.' >&2
+            exit 1
+          fi
+          awk '/\/admin.html/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'Cache-Control: no-store'
+          awk '/\/portal\/\*/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'Cache-Control: no-store'
+          awk '/\/portal\/\*/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'X-Robots-Tag: noindex'
+          grep -q "report-uri /api/security/csp-report" _worker.js
+
+      - name: Verify HTML accessibility and link integrity
+        shell: python
+        run: |
+          from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit
+          import re, sys
+
+          root = Path('.')
+          failures = []
+          html_files = sorted(p for p in root.rglob('*.html') if '.git' not in p.parts and '.github' not in p.parts)
+
+          class Audit(HTMLParser):
+              def __init__(self, path):
+                  super().__init__(convert_charrefs=True)
+                  self.path = path
+                  self.ids = set()
+                  self.duplicate_ids = set()
+                  self.links = []
+                  self.html_attrs = {}
+                  self.has_main = False
+                  self.h1 = 0
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if tag == 'html': self.html_attrs = a
+                  if tag == 'main': self.has_main = True
+                  if tag == 'h1': self.h1 += 1
+                  if 'id' in a:
+                      if a['id'] in self.ids: self.duplicate_ids.add(a['id'])
+                      self.ids.add(a['id'])
+                  if tag == 'a' and a.get('href') is not None:
+                      self.links.append((a.get('href',''), a))
+                  if tag == 'img' and 'alt' not in a:
+                      failures.append(f'{self.path}: image missing alt')
+                  if tag in {'input','select','textarea'}:
+                      labelled = bool(a.get('aria-label') or a.get('aria-labelledby') or a.get('title') or a.get('id'))
+                      if not labelled: failures.append(f'{self.path}: unlabelled {tag}')
+
+          for page in html_files:
+              text = page.read_text('utf-8')
+              audit = Audit(page)
+              audit.feed(text)
+              if page.name != '404.html':
+                  if audit.html_attrs.get('lang') != 'fa' or audit.html_attrs.get('dir') != 'rtl':
+                      failures.append(f'{page}: expected lang=fa dir=rtl')
+                  if not audit.has_main: failures.append(f'{page}: missing main landmark')
+              if audit.duplicate_ids: failures.append(f'{page}: duplicate ids {sorted(audit.duplicate_ids)}')
+              for href, attrs in audit.links:
+                  if href == '#': failures.append(f'{page}: empty hash link')
+                  if attrs.get('target') == '_blank':
+                      rel = set((attrs.get('rel') or '').split())
+                      if not {'noopener','noreferrer'} <= rel:
+                          failures.append(f'{page}: target=_blank missing noopener noreferrer')
+                  if not href or href.startswith(('#','mailto:','tel:','sms:','javascript:','data:')):
+                      continue
+                  parsed = urlsplit(href)
+                  if parsed.scheme or parsed.netloc:
+                      continue
+                  target = href.split('#',1)[0].split('?',1)[0]
+                  if not target: continue
+                  if target.startswith('/'):
+                      candidate = root / target.lstrip('/')
+                  else:
+                      candidate = page.parent / target
+                  if candidate.is_dir(): candidate = candidate / 'index.html'
+                  elif candidate.suffix == '': candidate = candidate / 'index.html'
+                  if not candidate.exists(): failures.append(f'{page}: broken local link {href}')
+
+          if failures:
+              print('\n'.join(failures))
+              sys.exit(1)
+          print(f'HTML audit PASS: {len(html_files)} pages')
+
+  codeql:
+    name: CodeQL JavaScript analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'
