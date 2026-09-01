@@ -1,0 +1,10 @@
+# Production ownership
+* @galaxy1364
+
+# Security and deployment controls
+/.github/ @galaxy1364
+/_worker.js @galaxy1364
+/_headers @galaxy1364
+/sw.js @galaxy1364
+/portal/ @galaxy1364
+/admin.html @galaxy1364
