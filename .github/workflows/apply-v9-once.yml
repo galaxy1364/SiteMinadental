@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - '.github/workflows/apply-v9-once.yml'
-      - '.v9latest/part-*.txt'
+      - '.v9verified/part-*.txt'
       - '.v9latest/V9_RUNTIME_SHA256SUMS.txt'
 
 permissions:
@@ -25,27 +25,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Assemble staged runtime when complete
+      - name: Assemble exact verified runtime
         id: assemble
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t parts < <(find .v9latest -maxdepth 1 -type f -name 'part-*.txt' | sort)
-          if [ "${#parts[@]}" -eq 0 ]; then
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          mapfile -t parts < <(find .v9verified -maxdepth 1 -type f -name 'part-*.txt' | sort)
+          test "${#parts[@]}" -eq 4
           cat "${parts[@]}" | tr -d '\r\n' > /tmp/v9-runtime.b64
-          if ! base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz 2>/dev/null; then
-            echo 'Staging is not complete yet (base64 incomplete).'
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if ! xz -t /tmp/v9-runtime.tar.xz 2>/dev/null; then
-            echo 'Staging is not complete yet (xz stream incomplete).'
-            echo 'ready=false' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz
+          xz -t /tmp/v9-runtime.tar.xz
           echo 'ready=true' >> "$GITHUB_OUTPUT"
 
       - name: Verify exact V9 runtime content
