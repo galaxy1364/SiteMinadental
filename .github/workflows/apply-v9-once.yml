@@ -1,13 +1,7 @@
-name: Apply MinaDentalClinic Enterprise V9 once
+name: Apply verified MinaDentalClinic Enterprise V9
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/apply-v9-once.yml'
-      - '.v9verified/part-*.txt'
-      - '.v9latest/V9_RUNTIME_SHA256SUMS.txt'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,24 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout staged main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Assemble exact verified runtime
-        id: assemble
         shell: bash
         run: |
           set -euo pipefail
           mapfile -t parts < <(find .v9verified -maxdepth 1 -type f -name 'part-*.txt' | sort)
-          test "${#parts[@]}" -eq 4
-          cat "${parts[@]}" | tr -d '\r\n' > /tmp/v9-runtime.b64
+          test "${#parts[@]}" -gt 0
+          : > /tmp/v9-runtime.b64
+          for part in "${parts[@]}"; do
+            test "$(tail -c 1 "$part")" = 'X'
+            head -c -1 "$part" >> /tmp/v9-runtime.b64
+          done
           base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz
           xz -t /tmp/v9-runtime.tar.xz
-          echo 'ready=true' >> "$GITHUB_OUTPUT"
 
       - name: Verify exact V9 runtime content
-        if: steps.assemble.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -63,15 +58,15 @@ jobs:
           node --check assets/js/portal.js
           node --check assets/js/status.js
 
-      - name: Replace old root atomically in commit workspace
-        if: steps.assemble.outputs.ready == 'true'
+      - name: Replace runtime atomically and preserve DevSecOps controls
         shell: bash
         run: |
           set -euo pipefail
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
           cp -a /tmp/v9-site/. .
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          git diff --cached --quiet && { echo 'No production changes.'; exit 0; }
           git commit -m 'Deploy MinaDentalClinic Enterprise V9 code-hardened'
           git push origin HEAD:main
