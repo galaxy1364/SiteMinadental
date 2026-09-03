@@ -1,3 +1,4 @@
+# audit-schema: 1.1
 name: Global Enterprise Audit
 
 on:
@@ -122,7 +123,7 @@ jobs:
           const s=r.categories;
           const scores={performance:s.performance.score,accessibility:s.accessibility.score,bestPractices:s['best-practices'].score,seo:s.seo.score};
           console.log(scores);
-          // SEO is intentionally not gated because the acceptance preview is noindex.
+          # SEO is intentionally not gated because the acceptance preview is noindex.
           if(scores.performance < .80) throw new Error('Performance lab score < 0.80');
           if(scores.accessibility < .90) throw new Error('Accessibility lab score < 0.90');
           if(scores.bestPractices < .90) throw new Error('Best Practices score < 0.90');
