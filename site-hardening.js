@@ -1,7 +1,6 @@
 (() => {
   'use strict';
 
-  const WHATSAPP_NUMBER = '989105306142';
   const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
   const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
   let scheduled = false;
@@ -35,17 +34,33 @@
     return status;
   };
 
+  const ensureVisibleFormStatus = form => {
+    let status = form.querySelector('[data-mina-operation-status]');
+    if (status) return status;
+    status = document.createElement('div');
+    status.setAttribute('data-mina-operation-status', 'true');
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    Object.assign(status.style, {
+      marginTop: '12px', padding: '12px 14px', borderRadius: '14px',
+      border: '1px solid rgba(217, 119, 6, .35)', background: 'rgba(217, 119, 6, .08)',
+      color: 'inherit', lineHeight: '1.9', fontSize: '13px'
+    });
+    form.appendChild(status);
+    return status;
+  };
+
   const labelForLink = anchor => {
     const href = anchor.getAttribute('href') || '';
     if (/^tel:/i.test(href)) return 'تماس تلفنی با کلینیک';
     if (/wa\.me|whatsapp/i.test(href)) return 'ارتباط با کلینیک در واتساپ';
     if (/instagram/i.test(href)) return 'صفحه اینستاگرام کلینیک';
     if (/t\.me|telegram/i.test(href)) return 'کانال تلگرام کلینیک';
-    if (/google.*maps|maps\.google/i.test(href)) return 'موقعیت کلینیک در گوگل مپ';
-    if (/neshan/i.test(href)) return 'موقعیت کلینیک در نشان';
-    if (/balad/i.test(href)) return 'موقعیت کلینیک در بلد';
-    if (/waze/i.test(href)) return 'موقعیت کلینیک در ویز';
-    if (/^mailto:/i.test(href)) return 'ارسال ایمیل به کلینیک';
+    if (/google.*maps|maps\.google/i.test(href)) return 'موقعیت در نقشه';
+    if (/neshan/i.test(href)) return 'موقعیت در نشان';
+    if (/balad/i.test(href)) return 'موقعیت در بلد';
+    if (/waze/i.test(href)) return 'موقعیت در ویز';
+    if (/^mailto:/i.test(href)) return 'ارسال ایمیل';
     return '';
   };
 
@@ -53,9 +68,9 @@
     const cls = button.className?.toString() || '';
     if (button.getAttribute('aria-haspopup') === 'dialog' || /lg:hidden/.test(cls)) return 'باز کردن منوی سایت';
     if (/fixed/.test(cls) && /bottom/.test(cls)) return 'بازگشت به بالای صفحه';
-    if (/w-3/.test(cls) && /h-3/.test(cls) && /rounded-full/.test(cls)) return `نمایش نظر بیمار شماره ${index + 1}`;
-    if (/absolute/.test(cls) && /right-0/.test(cls)) return 'نظر قبلی';
-    if (/absolute/.test(cls) && /left-0/.test(cls)) return 'نظر بعدی';
+    if (/w-3/.test(cls) && /h-3/.test(cls) && /rounded-full/.test(cls)) return `نمایش اسلاید شماره ${index + 1}`;
+    if (/absolute/.test(cls) && /right-0/.test(cls)) return 'مورد قبلی';
+    if (/absolute/.test(cls) && /left-0/.test(cls)) return 'مورد بعدی';
     const section = button.closest('section');
     const heading = section?.querySelector('h1,h2,h3');
     return heading ? `کنترل تعاملی بخش ${text(heading)}` : `دکمه تعاملی شماره ${index + 1}`;
@@ -166,29 +181,6 @@
     queueMicrotask(enhance);
   };
 
-  const readControl = (form, selectors) => {
-    for (const selector of selectors) {
-      const el = form.querySelector(selector);
-      if (!el) continue;
-      const value = 'value' in el ? el.value : text(el);
-      if (String(value || '').trim()) return String(value).trim();
-    }
-    return '';
-  };
-
-  const openWhatsApp = message => {
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener noreferrer';
-    anchor.style.display = 'none';
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    ensureStatusRegion().textContent = 'واتساپ برای ارسال درخواست باز شد.';
-  };
-
   document.addEventListener('submit', event => {
     const form = event.target;
     if (!(form instanceof HTMLFormElement)) return;
@@ -200,62 +192,23 @@
     event.stopImmediatePropagation();
     enhance();
 
-    let normalizedAppointmentPhone = '';
-    let appointmentPhoneInput = null;
-    let normalizedContactMethod = '';
     if (section.id === 'appointment') {
-      appointmentPhoneInput = form.querySelector('#phone, [name="phone"], input[type="tel"]');
-      normalizedAppointmentPhone = normalizeIranMobile(appointmentPhoneInput?.value || '');
-      if (appointmentPhoneInput && normalizedAppointmentPhone) appointmentPhoneInput.value = normalizedAppointmentPhone;
-    } else {
-      const contactMethodInput = form.querySelector('[name="email"], input[placeholder*="email"]');
-      const possibleMobile = normalizeIranMobile(contactMethodInput?.value || '');
-      if (/^09\d{9}$/.test(possibleMobile) && contactMethodInput) {
-        normalizedContactMethod = possibleMobile;
-        contactMethodInput.type = 'tel';
-        contactMethodInput.value = possibleMobile;
-      }
-    }
-
-    if (!form.reportValidity()) return;
-
-    if (section.id === 'appointment') {
-      const name = readControl(form, ['#name', '[name="full_name"]', 'input[placeholder*="نام کامل"]']);
-      const phoneInput = appointmentPhoneInput;
-      const phone = normalizedAppointmentPhone;
-      if (!/^09\d{9}$/.test(phone)) {
+      const phoneInput = form.querySelector('#phone, [name="phone"], input[type="tel"]');
+      const normalizedPhone = normalizeIranMobile(phoneInput?.value || '');
+      if (phoneInput && normalizedPhone) phoneInput.value = normalizedPhone;
+      if (!/^09\d{9}$/.test(normalizedPhone)) {
         phoneInput?.setCustomValidity('شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد.');
         phoneInput?.reportValidity();
         phoneInput?.setCustomValidity('');
         return;
       }
-      const service = readControl(form, ['[name="service"]', '[role="combobox"]']);
-      const date = readControl(form, ['#date', '[name="requested_date"]']);
-      const combos = [...form.querySelectorAll('[role="combobox"]')];
-      const time = readControl(form, ['[name="time"]']) || text(combos[1]);
-      const note = readControl(form, ['#message', '[name="appointment_message"]', 'textarea']);
-      openWhatsApp([
-        'درخواست رزرو نوبت از وب‌سایت',
-        `نام: ${name}`,
-        `موبایل: ${phone}`,
-        `خدمت: ${service || 'انتخاب نشده'}`,
-        `تاریخ: ${date || 'انتخاب نشده'}`,
-        `ساعت: ${time || 'انتخاب نشده'}`,
-        `توضیحات: ${note || 'ندارد'}`
-      ].join('\n'));
-    } else {
-      const name = readControl(form, ['[name="contact_name"]', 'input[placeholder="نام شما"]']);
-      const contactMethod = normalizedContactMethod || readControl(form, ['[name="email"]', 'input[placeholder*="email"]']);
-      const subject = readControl(form, ['[name="subject"]', 'input[placeholder*="موضوع"]']);
-      const message = readControl(form, ['[name="message"]', 'textarea']);
-      openWhatsApp([
-        'پیام جدید از وب‌سایت',
-        `نام: ${name}`,
-        `ایمیل یا شماره: ${contactMethod}`,
-        `موضوع: ${subject}`,
-        `پیام: ${message}`
-      ].join('\n'));
     }
+
+    if (!form.reportValidity()) return;
+
+    const message = 'این فرم از نظر رابط کاربری معتبر است، اما اتصال عملیاتی هنوز فعال نشده است؛ هیچ نوبت یا پیامی ثبت یا ارسال نشد.';
+    ensureVisibleFormStatus(form).textContent = message;
+    ensureStatusRegion().textContent = message;
   }, true);
 
   const observer = new MutationObserver(scheduleEnhance);
