@@ -9,6 +9,14 @@
       name: 'دندانپزشکی دکتر مینا مازندرانی',
       publicArea: 'تهران، منطقه ۲۲'
     },
+    runtime: {
+      truthGuardVersion: '1.0.0',
+      operationalFormsConnected: false,
+      bookingConnected: false,
+      otpConnected: false,
+      paymentsConnected: false,
+      productionDomainVerified: false
+    },
     verification: {
       exactAddress: false,
       mapPin: false,
