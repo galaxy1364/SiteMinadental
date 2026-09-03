@@ -1,53 +1,104 @@
 'use strict';
+
 const VERSION = '2026.08.05.1';
-const BASE = '/SiteMinadental/';
+const BASE_URL = new URL('./', self.location.href);
+const BASE = BASE_URL.pathname;
 const STATIC_CACHE = `mina-dental-static-${VERSION}`;
 const RUNTIME_CACHE = `mina-dental-runtime-${VERSION}`;
+
+const path = (value = '') => new URL(value, BASE_URL).pathname;
 const PRECACHE = [
-  BASE, `${BASE}index.html`, `${BASE}manifest.webmanifest`, `${BASE}version.json`,
-  `${BASE}path-fix.js`, `${BASE}site-hardening.js`, `${BASE}pwa-runtime.js`,
-  `${BASE}assets/index-ClUC_4GS.js`, `${BASE}assets/index-SCz4HByz.css`,
-  `${BASE}before-after.jpg`, `${BASE}clinic-interior.jpg`, `${BASE}doctor-portrait.jpg`, `${BASE}hero-bg.jpg`,
-  `${BASE}service-implant.jpg`, `${BASE}service-orthodontics.jpg`, `${BASE}service-pediatric.jpg`,
-  `${BASE}service-rootcanal.jpg`, `${BASE}service-veneer.jpg`, `${BASE}service-whitening.jpg`,
-  `${BASE}icons/icon-192.png`, `${BASE}icons/icon-512.png`, `${BASE}icons/icon-maskable-512.png`,
-  `${BASE}icons/apple-touch-icon.png`, `${BASE}icons/favicon-32.png`
+  path(''), path('index.html'), path('manifest.webmanifest'),
+  path('path-fix.js'), path('site-hardening.js'), path('pwa-runtime.js'),
+  path('assets/index-ClUC_4GS.js'), path('assets/index-SCz4HByz.css'),
+  path('before-after.jpg'), path('clinic-interior.jpg'), path('doctor-portrait.jpg'), path('hero-bg.jpg'),
+  path('service-implant.jpg'), path('service-orthodontics.jpg'), path('service-pediatric.jpg'),
+  path('service-rootcanal.jpg'), path('service-veneer.jpg'), path('service-whitening.jpg'),
+  path('icons/icon-192.png'), path('icons/icon-512.png'), path('icons/icon-maskable-512.png'),
+  path('icons/apple-touch-icon.png'), path('icons/favicon-32.png')
 ];
+
+const SENSITIVE_PREFIXES = [path('api/'), path('portal/'), path('admin/'), path('admin.html')];
+const NO_CACHE_PATHS = new Set([path('version.json'), path('sw.js')]);
+const isSensitive = (pathname) =>
+  SENSITIVE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting()));
+  event.waitUntil(
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting())
+  );
 });
+
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('mina-dental-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key)).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith('mina-dental-') && ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
+          .map((key) => caches.delete(key))
+      ))
+      .then(() => self.clients.claim())
+  );
 });
+
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
-const networkFirst = async (request) => {
+
+const canStore = (request, response) =>
+  request.method === 'GET' &&
+  response?.ok &&
+  ['basic', 'cors', 'default'].includes(response.type || 'default');
+
+const networkFirstPublicNavigation = async (request) => {
   try {
     const response = await fetch(request);
-    if (response?.ok) (await caches.open(RUNTIME_CACHE)).put(request, response.clone());
+    if (canStore(request, response)) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      await cache.put(request, response.clone());
+    }
     return response;
   } catch {
-    return (await caches.match(request)) || (await caches.match(`${BASE}index.html`));
+    return (await caches.match(request)) || (await caches.match(path('index.html')));
   }
 };
+
 const cacheFirst = async (request) => {
   const cached = await caches.match(request);
   if (cached) return cached;
   const response = await fetch(request);
-  if (response && (response.ok || response.type === 'opaque')) (await caches.open(RUNTIME_CACHE)).put(request, response.clone());
+  if (canStore(request, response) || response?.type === 'opaque') {
+    const cache = await caches.open(RUNTIME_CACHE);
+    await cache.put(request, response.clone());
+  }
   return response;
 };
+
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (event.request.mode === 'navigate') {
-    event.respondWith(networkFirst(event.request));
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+
+  // Never cache or synthesize fallbacks for future authenticated/clinical/admin/API surfaces.
+  if (url.origin === self.location.origin && (isSensitive(url.pathname) || NO_CACHE_PATHS.has(url.pathname))) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }
+
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirstPublicNavigation(request));
+    return;
+  }
+
   if (url.origin === self.location.origin && url.pathname.startsWith(BASE)) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(cacheFirst(request));
     return;
   }
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') event.respondWith(cacheFirst(event.request));
+
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    event.respondWith(cacheFirst(request));
+  }
 });
