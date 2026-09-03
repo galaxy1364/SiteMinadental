@@ -1,4 +1,5 @@
 /* MinaDental Enterprise Audit Center — truthful preview status only */
+/* audit pipeline retrigger: html-shell findings fixed */
 (function(){
   if (typeof routes !== 'undefined' && !routes.some(r => r[0] === '/audit')) {
     routes.push(['/audit','Enterprise Audit Center','front']);
