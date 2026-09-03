@@ -19,7 +19,7 @@ const PRECACHE = [
 ];
 
 const SENSITIVE_PREFIXES = [path('api/'), path('portal/'), path('admin/'), path('admin.html')];
-const NO_CACHE_PATHS = new Set([path('version.json'), path('sw.js')]);
+const NO_CACHE_PATHS = new Set([path('config.js'), path('version.json'), path('sw.js')]);
 const isSensitive = (pathname) =>
   SENSITIVE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 
@@ -82,7 +82,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Never cache or synthesize fallbacks for future authenticated/clinical/admin/API surfaces.
+  // Never cache or synthesize fallbacks for mutable truth data or future authenticated/clinical/admin/API surfaces.
   if (url.origin === self.location.origin && (isSensitive(url.pathname) || NO_CACHE_PATHS.has(url.pathname))) {
     event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
