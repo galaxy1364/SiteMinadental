@@ -199,16 +199,41 @@ Lovable Workspace/Project متصل است، اما آخرین بررسی نشا�
 
 ## 13) Immediate Priority Queue
 
-1. Truth-hardening Root metadata/schema و حذف داده‌های تأییدنشده
-2. تکمیل Global Enterprise Audit تا Browser/Lighthouse/WCAG/ZAP evidence
-3. یکپارچه‌کردن R3 Visual DNA با Runtime Enterprise بدون regression
-4. حذف staging remnants فقط بعد از تأیید عدم نیاز و با audit
-5. Production domain/Cloudflare verification
-6. Supabase/Auth/RLS/OTP/Turnstile
-7. Booking/Recall/Waitlist/Payments واقعی
-8. Owner truth-data ingestion
-9. Device accessibility + field performance + pentest
-10. Production 10/10 فقط پس از Evidence کامل
+1. 🟡 Truth-hardening Root metadata/schema و حذف داده‌های تأییدنشده — مرحله اول انجام شد؛ sweep کامل Bundle/Content ادامه دارد
+2. 🟡 تکمیل Global Enterprise Audit تا Browser/Lighthouse/WCAG/ZAP evidence
+3. ⬜ یکپارچه‌کردن R3 Visual DNA با Runtime Enterprise بدون regression
+4. ⬜ حذف staging remnants فقط بعد از تأیید عدم نیاز و با audit
+5. ⬜ Production domain/Cloudflare verification
+6. ⬜ Supabase/Auth/RLS/OTP/Turnstile
+7. ⬜ Booking/Recall/Waitlist/Payments واقعی
+8. ⬜ Owner truth-data ingestion
+9. ⬜ Device accessibility + field performance + pentest
+10. ⬜ Production 10/10 فقط پس از Evidence کامل
+
+## 14) Current Hardening Log — 2026-09-03
+
+### DONE
+- `README.md` از فایل خالی/حداقلی به سند مادر واحد Governance/Truth Lock ارتقا یافت.
+- Root `index.html` بدون تغییر Visual Bundle، Truth-Harden شد: آدرس دقیق، ساعت، مختصات، تلفن، ایمیل، Social handles، price/payment fields و ادعاهای غیرقابل‌اثبات از JSON-LD/metadata حذف شدند.
+- `manifest.webmanifest` از مسیر hard-coded `/SiteMinadental/` به مسیرهای relative تبدیل شد تا GitHub Pages و دامنه نهایی از یک Manifest استفاده کنند.
+- shortcut عملیاتی «رزرو نوبت» از Manifest قدیمی حذف شد تا بدون Backend موفقیت/قابلیت ضمنی ادعا نشود.
+- `pwa-runtime.js` از Base hard-coded خارج شد و Service Worker scope از محل واقعی Script مشتق می‌شود.
+- ذخیره ضمنی تمام فرم‌ها در `sessionStorage` حذف شد؛ فقط fieldهایی که صریحاً `data-pwa-preserve="true"` دارند قابل نگهداری‌اند.
+- Install Prompt خودکار روی اولین click/keypress حذف و به API/Event کنترل‌شده `window.MinaPWA` تبدیل شد.
+- `sw.js` Base پویا گرفت و `api/`, `portal/`, `admin/`, `admin.html`, `version.json`, `sw.js` از cache/fallback حساس خارج شدند.
+
+### EVIDENCE / COMMITS
+- Master Governance: `67fd5f85fdb2337ec6c76fad959b6273e246ef1d`
+- Root truth metadata: `0c4b89cec39d96d27118842a090706763a5598dc`
+- Portable truth-safe manifest: `889c37f69df3611455410a0c44d91b08f22bf7ec`
+- PWA runtime privacy/base hardening: `88745f61dbdf37ce4eef1d9897f4af45628350df`
+- Service Worker cache hardening: `5b523bb7bdad4f8177b796925f01f9dfad64a827`
+
+### NOT YET CLAIMED
+- V9/Enterprise runtime is **not** claimed live on Production.
+- `minadentalclinic.ir` is **not** claimed verified until direct domain/Cloudflare evidence exists.
+- Booking/OTP/Payment/Portal backend are **not** claimed operational.
+- WCAG human/device PASS, field CWV PASS and pentest PASS are **not** claimed.
 
 ---
 
