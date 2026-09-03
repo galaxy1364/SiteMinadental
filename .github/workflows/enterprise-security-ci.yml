@@ -33,6 +33,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Verify current root JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          current=(path-fix.js site-hardening.js pwa-runtime.js sw.js)
+          for file in "${current[@]}"; do
+            test -f "$file"
+            node --check "$file"
+          done
+          echo 'Current root JavaScript syntax PASS'
+
       - name: Verify V9 production contract
         shell: bash
         run: |
