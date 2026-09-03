@@ -62,7 +62,10 @@ jobs:
           fi
 
           grep -q 'data-mina-owner-gated' site-hardening.js
-          grep -q 'before-after-verified-gate' site-hardening.js || grep -q "gateSection(.*before-after" site-hardening.js
+          grep -q 'gateSection' site-hardening.js
+          grep -q "'stats'" site-hardening.js
+          grep -q "'before-after'" site-hardening.js
+          grep -q "'testimonials'" site-hardening.js
           grep -q "path('config.js')" sw.js
           echo 'Owner-truth contract PASS'
 
