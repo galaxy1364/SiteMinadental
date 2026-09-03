@@ -26,23 +26,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  production-gate:
-    name: Production integrity gate
+  current-root-hardening:
+    name: Current root hardening evidence
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Verify current root JavaScript syntax
+      - name: JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          current=(path-fix.js site-hardening.js pwa-runtime.js sw.js)
+          current=(config.js path-fix.js site-hardening.js pwa-runtime.js sw.js)
           for file in "${current[@]}"; do
             test -f "$file"
             node --check "$file"
           done
           echo 'Current root JavaScript syntax PASS'
+
+      - name: Owner-truth contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'MINA_PUBLIC_CONFIG' config.js
+          grep -q 'exactAddress: false' config.js
+          grep -q 'mapPin: false' config.js
+          grep -q 'phone: false' config.js
+          grep -q 'reviews: false' config.js
+          grep -q 'beforeAfterConsent: false' config.js
+          grep -q '<script src="./config.js"></script>' index.html
+
+          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.7219|51\.3347|خیابان امیرکبیر.*یاس' index.html manifest.webmanifest config.js; then
+            echo 'Unverified owner data escaped into root public metadata/config.' >&2
+            exit 1
+          fi
+
+          grep -q 'data-mina-owner-gated' site-hardening.js
+          grep -q 'before-after-verified-gate' site-hardening.js || grep -q "gateSection(.*before-after" site-hardening.js
+          grep -q "path('config.js')" sw.js
+          echo 'Owner-truth contract PASS'
+
+      - name: Privacy and PWA contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q "querySelectorAll('input,select,textarea')" pwa-runtime.js; then
+            echo 'Implicit all-form persistence regression detected.' >&2
+            exit 1
+          fi
+          grep -q 'data-pwa-preserve="true"' pwa-runtime.js
+          grep -q "path('api/')" sw.js
+          grep -q "path('portal/')" sw.js
+          grep -q "path('admin/')" sw.js
+          grep -q "cache: 'no-store'" sw.js
+          echo 'Privacy/PWA contract PASS'
+
+  production-gate:
+    name: V9 production integrity gate
+    runs-on: ubuntu-latest
+    needs: current-root-hardening
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Verify V9 production contract
         shell: bash
@@ -107,7 +152,7 @@ jobs:
           from pathlib import Path
           from html.parser import HTMLParser
           from urllib.parse import urlsplit
-          import re, sys
+          import sys
 
           root = Path('.')
           failures = []
@@ -122,12 +167,10 @@ jobs:
                   self.links = []
                   self.html_attrs = {}
                   self.has_main = False
-                  self.h1 = 0
               def handle_starttag(self, tag, attrs):
                   a = dict(attrs)
                   if tag == 'html': self.html_attrs = a
                   if tag == 'main': self.has_main = True
-                  if tag == 'h1': self.h1 += 1
                   if 'id' in a:
                       if a['id'] in self.ids: self.duplicate_ids.add(a['id'])
                       self.ids.add(a['id'])
@@ -140,9 +183,8 @@ jobs:
                       if not labelled: failures.append(f'{self.path}: unlabelled {tag}')
 
           for page in html_files:
-              text = page.read_text('utf-8')
               audit = Audit(page)
-              audit.feed(text)
+              audit.feed(page.read_text('utf-8'))
               if page.name != '404.html':
                   if audit.html_attrs.get('lang') != 'fa' or audit.html_attrs.get('dir') != 'rtl':
                       failures.append(f'{page}: expected lang=fa dir=rtl')
@@ -161,10 +203,7 @@ jobs:
                       continue
                   target = href.split('#',1)[0].split('?',1)[0]
                   if not target: continue
-                  if target.startswith('/'):
-                      candidate = root / target.lstrip('/')
-                  else:
-                      candidate = page.parent / target
+                  candidate = (root / target.lstrip('/')) if target.startswith('/') else (page.parent / target)
                   if candidate.is_dir(): candidate = candidate / 'index.html'
                   elif candidate.suffix == '': candidate = candidate / 'index.html'
                   if not candidate.exists(): failures.append(f'{page}: broken local link {href}')
