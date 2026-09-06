@@ -1,4 +1,4 @@
-# audit-schema: 1.4
+# audit-schema: 1.5
 name: Global Enterprise Audit
 
 on:
@@ -18,6 +18,7 @@ on:
       - 'governance-links.js'
       - 'status-runtime.js'
       - 'config.js'
+      - '.github/scripts/lighthouse-median.cjs'
       - '.github/workflows/global-enterprise-audit.yml'
   schedule:
     - cron: '41 2 * * 3'
@@ -50,6 +51,7 @@ jobs:
           node --check governance-links.js
           node --check status-runtime.js
           node --check config.js
+          node --check .github/scripts/lighthouse-median.cjs
 
       - name: HTML validation
         run: |
@@ -155,31 +157,11 @@ jobs:
           NODE
           node route-audit.cjs
 
-      - name: Lighthouse evidence - preview
-        run: |
-          npx lighthouse "$PREVIEW_URL" --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse-preview.json
-          node - <<'NODE'
-          const r=require('./lighthouse-preview.json');
-          const s=r.categories;
-          const scores={performance:s.performance.score,accessibility:s.accessibility.score,bestPractices:s['best-practices'].score,seo:s.seo.score};
-          console.log('preview',scores);
-          if(scores.performance < .80) throw new Error('Preview performance lab score < 0.80');
-          if(scores.accessibility < .90) throw new Error('Preview accessibility lab score < 0.90');
-          if(scores.bestPractices < .90) throw new Error('Preview best-practices score < 0.90');
-          NODE
+      - name: Lighthouse multi-run median evidence - preview
+        run: node .github/scripts/lighthouse-median.cjs preview "$PREVIEW_URL"
 
-      - name: Lighthouse evidence - root
-        run: |
-          npx lighthouse "$ROOT_URL" --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse-root.json
-          node - <<'NODE'
-          const r=require('./lighthouse-root.json');
-          const s=r.categories;
-          const scores={performance:s.performance.score,accessibility:s.accessibility.score,bestPractices:s['best-practices'].score,seo:s.seo.score};
-          console.log('root',scores);
-          if(scores.performance < .80) throw new Error('Root performance lab score < 0.80');
-          if(scores.accessibility < .90) throw new Error('Root accessibility lab score < 0.90');
-          if(scores.bestPractices < .90) throw new Error('Root best-practices score < 0.90');
-          NODE
+      - name: Lighthouse multi-run median evidence - root
+        run: node .github/scripts/lighthouse-median.cjs root "$ROOT_URL"
 
       - name: WCAG automated evidence
         shell: bash
@@ -231,8 +213,8 @@ jobs:
         with:
           name: enterprise-browser-audit-evidence
           path: |
-            lighthouse-preview.json
-            lighthouse-root.json
+            lighthouse-preview-*.json
+            lighthouse-root-*.json
             pa11y-wcag2aa.json
           if-no-files-found: warn
 
