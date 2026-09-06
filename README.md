@@ -268,8 +268,9 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 - internal-link audit: initially found one wrong portal path; fixed; retest PASS with 0 unresolved generated/known-root links.
 - local Chromium execution in current container is `NOT_MEASURED_YET` because the container Chromium process hangs on D-Bus/mojo; browser truth must therefore come from existing GitHub Actions Playwright/Lighthouse/Pa11y gate after publish, not be claimed locally.
 
-### First clean-source commit
-- Commit `0edb41558145f50768672fa7c7d6ecd246c40508` creates tested clean-source public assets and conservative Cloudflare edge truth contracts without switching Root yet.
+### Clean-source core integration
+- Orphan prototype commit `0edb41558145f50768672fa7c7d6ecd246c40508` was never attached to `main`; it is forensic-only and not a release commit.
+- The same tested core assets were reapplied without force on top of the documented HEAD as commit `3fea88f0f7717b83d491904c2c3113eb89b2af98`.
 - Added `assets/css/site.css` with premium RTL/mobile-first design, focus/reduced-motion/contrast/print handling and reserved hero dimensions to reduce CLS.
 - Added `assets/js/site.js` with Persian-normalized search, accessible menu/dialog behavior, owner-gated state hooks and portable GitHub Pages/custom-domain base resolution.
 - Added `_worker.js` with real `/api/health` and `/api/capabilities` truth responses; all unconfigured `/api/*` operations return `503 CAPABILITY_NOT_CONFIGURED` instead of fake success.
@@ -285,8 +286,8 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 - Turnstile requires server-side token validation; client-only CAPTCHA success is not accepted.
 
 ### Current execution state
-- **DONE:** read-only source audit, truth/config audit, V9 recovery audit, latest CI audit, Supabase project discovery read-only, standards refresh, clean-source local generation/syntax/structure/link tests, first additive clean-source asset commit.
-- **NOT YET VERIFIED:** fast-forward publication of first clean-source commit, Root switch, GitHub Pages exact-snapshot evidence, updated CI contracts, real browser Lighthouse/WCAG/ZAP on clean Root.
+- **DONE:** read-only source audit, truth/config audit, V9 recovery audit, latest CI audit, Supabase project discovery read-only, standards refresh, clean-source local generation/syntax/structure/link tests, core clean-source assets committed in fast-forward-compatible history.
+- **NEXT:** attach `3fea88f0f7717b83d491904c2c3113eb89b2af98` to `main` with non-force ref update, then add static content routes, update CI contracts, switch Root and run real GitHub Pages browser/Lighthouse/WCAG/ZAP evidence.
 - **BLOCKED EXTERNAL:** custom production domain/Cloudflare secret evidence, dedicated public-site backend ownership decision, real OTP/SMS provider, Turnstile keys, PSP/payment provider, Search Console/Business Profile ownership, VAPID/push provider, live AI provider, owner-verified clinic details/media/claims, real-device/field tests, independent pentest.
 
 ### Forbidden now
@@ -296,7 +297,7 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 - Do not claim Production 10/10 or Google Top 1/Top 3.
 
 ### Resume point
-`CLEAN_SOURCE_PHASE_A_COMMIT_CREATED_AWAITING_FAST_FORWARD_REF_AND_CI`
+`CLEAN_SOURCE_PHASE_A_CORE_COMMIT_READY_FOR_NONFORCE_MAIN_REF`
 
 ---
 
