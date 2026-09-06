@@ -1,6 +1,7 @@
 (() => {
   'use strict';
 
+  const STATUS_RUNTIME_VERSION = '1.0.0';
   const config = window.MINA_PUBLIC_CONFIG || null;
 
   const setState = (element, enabled, readyLabel = 'فعال و تأییدشده', blockedLabel = 'غیرفعال / نیازمند Evidence') => {
@@ -19,6 +20,7 @@
   const apply = () => {
     const root = document.querySelector('[data-status-root]');
     if (!root) return;
+    root.dataset.statusRuntimeVersion = STATUS_RUNTIME_VERSION;
 
     if (!config) {
       root.querySelectorAll('[data-runtime-flag],[data-verification-flag]').forEach(el => {
