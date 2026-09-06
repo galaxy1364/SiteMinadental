@@ -95,6 +95,11 @@ jobs:
             grep -q '<html lang="fa" dir="rtl">' "$page"
             grep -q '<main ' "$page"
             grep -q 'href="./governance.css"' "$page"
+            grep -q 'http-equiv="Content-Security-Policy"' "$page"
+            grep -q "default-src 'self'" "$page"
+            grep -q "object-src 'none'" "$page"
+            grep -q "script-src 'self'" "$page"
+            grep -q "style-src 'self'" "$page"
             if grep -E -n '<style([ >])|style=' "$page"; then
               echo "Inline style regression in $page; governance surfaces must remain CSP-ready." >&2
               exit 1
@@ -106,7 +111,7 @@ jobs:
           grep -q '<link rel="stylesheet" href="./governance-nav.css"' index.html
           grep -q '<script src="./governance-links.js" defer></script>' index.html
           grep -q 'data-mina-governance-links' governance-links.js
-          if grep -E -n '\.style\.|cssText|setAttribute\([[:space:]]*["'"']style' governance-links.js; then
+          if grep -E -n '\.style\.|cssText' governance-links.js || grep -E -n 'setAttribute\([^)]*style' governance-links.js; then
             echo 'Inline runtime styling regression detected in governance-links.js.' >&2
             exit 1
           fi
@@ -127,10 +132,10 @@ jobs:
 
           grep -q 'تشخیص قطعی' ai-transparency.html
           grep -q 'تجویز دارو' ai-transparency.html
-          grep -q 'Human handoff\|human handoff' ai-transparency.html
+          grep -Eq 'Human handoff|human handoff' ai-transparency.html
           grep -q 'Medical Review' editorial-governance.html
           grep -q 'Truth Review' editorial-governance.html
-          grep -q 'Revision history\|Revision History\|Revision history' editorial-governance.html
+          grep -Eq 'Revision history|Revision History' editorial-governance.html
 
           if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.748836|51\.247835|Dr\.mina\.mazandarani|dr_mina_mazandarani' "${pages[@]}"; then
             echo 'Unverified owner/provider data escaped into governance pages.' >&2
