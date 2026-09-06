@@ -18,55 +18,92 @@ concurrency:
   group: minadentalclinic-v9-apply
   cancel-in-progress: false
 
-env:
-  V9_ARCHIVE_REF: '100063b1a7bc342c0d47f577e309f3ffcdb443a2'
-  V9_RECORDED_ARCHIVE_SHA256: 'f9bf8e9e5dd345be3a335721b27e5ac90ed804d17633d154c90b314399d18cf6'
-
 jobs:
   verify-payload:
     name: Recover and verify exact historical V9 payload
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      selected_ref: ${{ steps.recover.outputs.selected_ref }}
+      archive_sha256: ${{ steps.recover.outputs.archive_sha256 }}
     steps:
-      - name: Checkout current governance and manifest
+      - name: Checkout full repository history
         uses: actions/checkout@v6
         with:
-          path: current
+          fetch-depth: 0
 
-      - name: Checkout immutable historical V9 archive snapshot
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ env.V9_ARCHIVE_REF }}
-          path: historical
-          fetch-depth: 1
-
-      - name: Verify immutable archive container
+      - name: Recover first content-valid historical archive
+        id: recover
         shell: bash
         run: |
           set -euo pipefail
-          archive="$GITHUB_WORKSPACE/historical/.v9stage/runtime.tar.xz"
-          test -f "$archive"
-          actual="$(sha256sum "$archive" | awk '{print $1}')"
-          echo "Historical archive SHA256: $actual"
-          echo "Recorded archive SHA256:   $V9_RECORDED_ARCHIVE_SHA256"
-          if [ "$actual" != "$V9_RECORDED_ARCHIVE_SHA256" ]; then
-            echo '::warning::Legacy archive-level SHA record does not match immutable Git snapshot; per-file manifest verification remains authoritative.'
+          manifest="$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
+          test -f "$manifest"
+          test "$(wc -l < "$manifest")" -eq 69
+
+          mapfile -t refs < <(git log --all --format='%H' -- .v9stage/runtime.tar.xz | awk '!seen[$0]++')
+          echo "Archive snapshots found: ${#refs[@]}"
+          test "${#refs[@]}" -gt 0
+
+          selected=''
+          for ref in "${refs[@]}"; do
+            echo "=== Auditing archive snapshot $ref ==="
+            if ! git cat-file -e "$ref:.v9stage/runtime.tar.xz" 2>/dev/null; then
+              echo 'archive absent at this snapshot'
+              continue
+            fi
+
+            git show "$ref:.v9stage/runtime.tar.xz" > /tmp/candidate.tar.xz
+            size="$(wc -c < /tmp/candidate.tar.xz)"
+            sha="$(sha256sum /tmp/candidate.tar.xz | awk '{print $1}')"
+            echo "size=$size sha256=$sha"
+
+            if ! xz -t /tmp/candidate.tar.xz; then
+              echo 'INVALID_XZ'
+              continue
+            fi
+
+            rm -rf /tmp/candidate-site
+            mkdir -p /tmp/candidate-site
+            if ! tar -xJf /tmp/candidate.tar.xz -C /tmp/candidate-site; then
+              echo 'INVALID_TAR'
+              continue
+            fi
+
+            count="$(find /tmp/candidate-site -type f | wc -l)"
+            echo "file_count=$count"
+            if [ "$count" -ne 69 ]; then
+              echo 'INVALID_FILE_COUNT'
+              continue
+            fi
+
+            if ! (cd /tmp/candidate-site && sha256sum -c "$manifest"); then
+              echo 'MANIFEST_MISMATCH'
+              continue
+            fi
+
+            selected="$ref"
+            cp /tmp/candidate.tar.xz /tmp/v9-runtime.tar.xz
+            rm -rf /tmp/v9-site
+            mv /tmp/candidate-site /tmp/v9-site
+            echo "selected_ref=$ref" >> "$GITHUB_OUTPUT"
+            echo "archive_sha256=$sha" >> "$GITHUB_OUTPUT"
+            echo "archive_sha256=$sha" >> "$GITHUB_ENV"
+            echo "SELECTED_VALID_ARCHIVE=$ref"
+            break
+          done
+
+          if [ -z "$selected" ]; then
+            echo 'No historical .v9stage/runtime.tar.xz snapshot passes XZ + 69-file + per-file SHA256 manifest verification.' >&2
+            exit 1
           fi
-          xz -t "$archive"
-          echo "archive_sha256=$actual" >> "$GITHUB_ENV"
 
-      - name: Verify exact 69-file manifest
+      - name: Verify V9 identity and required runtime
         shell: bash
         run: |
           set -euo pipefail
-          archive="$GITHUB_WORKSPACE/historical/.v9stage/runtime.tar.xz"
-          rm -rf /tmp/v9-site
-          mkdir -p /tmp/v9-site
-          tar -xJf "$archive" -C /tmp/v9-site
-          test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
           cd /tmp/v9-site
-          sha256sum -c "$GITHUB_WORKSPACE/current/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
           for file in \
             index.html _worker.js sw.js version.json config.js manifest.webmanifest \
             admin.html portal/index.html assets/css/site.css assets/js/site.js \
@@ -128,13 +165,25 @@ jobs:
           node --check assets/js/status.js
           echo "Recovered V9 payload verified. Archive SHA256: $archive_sha256"
 
+      - name: Record recovery evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "selected_ref=${{ steps.recover.outputs.selected_ref }}"
+            echo "archive_sha256=${{ steps.recover.outputs.archive_sha256 }}"
+            echo 'runtime_files=69'
+            echo 'manifest=PASS'
+            cat /tmp/v9-site/version.json
+          } > /tmp/V9_RECOVERY_EVIDENCE.txt
+
       - name: Upload verified recovery evidence only
         uses: actions/upload-artifact@v4
         with:
           name: v9-recovery-evidence
           path: |
-            /tmp/v9-site/version.json
-            current/.v9latest/V9_RUNTIME_SHA256SUMS.txt
+            /tmp/V9_RECOVERY_EVIDENCE.txt
+            .v9latest/V9_RUNTIME_SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14
 
@@ -146,37 +195,45 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout current main
+      - name: Checkout current main with full history
         uses: actions/checkout@v6
         with:
-          path: current
           fetch-depth: 0
 
-      - name: Checkout immutable historical V9 archive snapshot
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ env.V9_ARCHIVE_REF }}
-          path: historical
-          fetch-depth: 1
-
-      - name: Reverify immediately before apply
+      - name: Reconstruct the exact verified archive from immutable Git history
         shell: bash
         run: |
           set -euo pipefail
-          archive="$GITHUB_WORKSPACE/historical/.v9stage/runtime.tar.xz"
-          xz -t "$archive"
+          ref='${{ needs.verify-payload.outputs.selected_ref }}'
+          expected='${{ needs.verify-payload.outputs.archive_sha256 }}'
+          test -n "$ref"
+          test -n "$expected"
+          git show "$ref:.v9stage/runtime.tar.xz" > /tmp/v9-runtime.tar.xz
+          test "$(sha256sum /tmp/v9-runtime.tar.xz | awk '{print $1}')" = "$expected"
+          xz -t /tmp/v9-runtime.tar.xz
           rm -rf /tmp/v9-site
           mkdir -p /tmp/v9-site
-          tar -xJf "$archive" -C /tmp/v9-site
+          tar -xJf /tmp/v9-runtime.tar.xz -C /tmp/v9-site
           test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
           cd /tmp/v9-site
-          sha256sum -c "$GITHUB_WORKSPACE/current/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
+          sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
           grep -q '2026.08.30.9' version.json
           grep -q 'enterprise-v9' version.json
 
+      - name: Re-run truth gate immediately before apply
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/v9-site
+          ! grep -R -n -E \
+            '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|خیابان امیرکبیر|Dr\.mina\.mazandarani|dr_mina_mazandarani' \
+            --include='*.html' --include='*.js' --include='*.json' --include='*.xml' --include='*.txt' .
+          ! grep -R -n -E \
+            "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" \
+            --include='*.html' --include='*.js' --include='*.json' .
+
       - name: Replace runtime atomically while preserving governance and DevSecOps
         shell: bash
-        working-directory: current
         run: |
           set -euo pipefail
           cp README.md /tmp/MASTER_README.md
