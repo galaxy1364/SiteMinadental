@@ -129,13 +129,16 @@
 3. **CodeQL JavaScript analysis** — مستقل اجرا می‌شود.
 
 Current Root Hardening checks:
-- `config.js`, `path-fix.js`, `site-hardening.js`, `pwa-runtime.js`, `sw.js` syntax
+- `config.js`, `path-fix.js`, `site-hardening.js`, `governance-links.js`, `pwa-runtime.js`, `sw.js` syntax
 - owner-truth gates
 - نبود owner data تأییدنشده در root metadata/config/manifest
 - runtime Truth Guard presence
 - config no-cache
 - privacy-safe PWA state preservation
 - sensitive `api/portal/admin` cache exclusion
+- وجود و discoverability واقعی `privacy.html` و `accessibility.html`
+- حضور Governance routes در Sitemap
+- جلوگیری از ورود phone/email/geo/social تأییدنشده به Governance pages
 
 ### Global Enterprise Audit
 هدف:
@@ -274,6 +277,31 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 - `minadentalclinic.ir` is **not** claimed verified until direct Cloudflare/domain evidence exists.
 - Booking/OTP/Payment/Portal backend are **not** claimed operational.
 - WCAG human/device PASS, field CWV PASS, backup/restore PASS and pentest PASS are **not** claimed.
+
+## 17) Recovery + Governance Log — 2026-09-06
+
+### 🔴 V9 HISTORICAL RECOVERY — BLOCKED WITH EVIDENCE
+- `.v9latest` current 12-part payload is truncated: assembled Base64 decodes to an incomplete XZ and `xz -t` fails with `Unexpected end of input`.
+- Historical direct `.v9stage/runtime.tar.xz` snapshots were audited. Two archive snapshots were found and both fail `xz -t`; neither is a trustworthy runtime source.
+- Git history was scanned for direct Root snapshots containing V9 identity; no historical Root tree reproduced all 69 authoritative file hashes.
+- A forensic workflow then audited coherent historical snapshots independently for `.v9verified`, `.v9latest`, `.v9xz`, `.v9b64`, `.v9payload`, `exact-payload` and `.payload`.
+- No cross-generation stitching was used. Each snapshot was tried independently as raw/Base64 and XZ/TAR or ZIP, and could only pass if it reproduced **all 69 per-file SHA256 hashes** from `.v9latest/V9_RUNTIME_SHA256SUMS.txt`.
+- Result: no historical tree/archive/chunk snapshot reproduced the authoritative 69-file manifest. Therefore V9 apply remains blocked and was not triggered.
+- Forensic recovery workflow commit: `a8fadbe23da7c3fa41afcc2ec676db15d67e3389`; run `34019587860`; recovery job failed as designed and apply job was skipped.
+- File Library contains `minadentalclinic-v9-visual-preview.html` and `OWNER_INPUTS_V9.md`, but no exact 69-file V9 archive was found. The visual preview contains unverified phone/geo/social/operational claims and is capability/UX reference only, not deployable Production truth.
+
+### ✅ ROOT GOVERNANCE CAPABILITY — IMPLEMENTED
+- `privacy.html` added as a truthful public Privacy Center without invented contact details or unsupported compliance claims. Commit: `b9ce3eda1e55536e39d597422fdc4a1232e3c38f`.
+- `accessibility.html` added with WCAG 2.2 AA as a target, explicitly separating automated checks from still-required VoiceOver/TalkBack/keyboard/200–400% zoom/device testing. Commit: `0ea353095e301f7df1b691a655bd603cba6543f0`.
+- `governance-links.js` exposes both pages from the real public Root without editing the minified React bundle. Initial commit: `fd021acb299486c61ccb8654137f9f6b06bab3d2`; contract marker commit: `a2219530e6c97e24c1c0b7469863f43fc82724b2`.
+- Root `index.html` loads the Governance module. Commit: `380e869ac3bea17ae729d6570e2d89347b6e32e0`.
+- `sitemap.xml` now lists Home, Privacy and Accessibility on the currently verified GitHub Pages origin. Commit: `1b8a2f5e30ba3f20cb267266ef429666f4d177e6`.
+- Enterprise CI now checks Governance JS syntax, page existence, `lang=fa dir=rtl`, main landmarks, Root discoverability, Sitemap entries and owner-data leak patterns. CI contract commit: `4997750268743528081c65c61aa415323a5367e2`.
+
+### NEXT SAFE GAP
+- Continue adding real owner-independent capabilities to current Root while clean-source recovery/reconstruction is solved separately.
+- Do not delete V9 staging remnants until dependency/recovery audit is explicitly closed and rollback evidence is retained.
+- Next candidate after Governance verification: truthful public Status surface and operational-capability matrix, then AI transparency/medical editorial governance.
 
 ---
 
