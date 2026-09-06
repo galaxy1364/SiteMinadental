@@ -1,0 +1,155 @@
+name: Supply Chain Integrity Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - '.v9latest/**'
+      - '.v9verified/**'
+      - '.v9payload/**'
+      - '.v9xz/**'
+      - '.v9b64/**'
+      - '.v9stage/**'
+      - '.payload/**'
+      - 'exact-payload/**'
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+concurrency:
+  group: supply-chain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence:
+    name: Deterministic snapshot, SBOM and attestations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build audited public snapshot
+        shell: python
+        run: |
+          from pathlib import Path
+          import hashlib, shutil, subprocess, sys
+
+          root = Path('.')
+          out = Path('supply-chain/public-snapshot')
+          out.mkdir(parents=True, exist_ok=True)
+
+          excluded_roots = {
+              '.git', '.github', '.payload', '.v9b64', '.v9latest', '.v9payload',
+              '.v9stage', '.v9verified', '.v9xz', 'exact-payload'
+          }
+          excluded_files = {'README.md', '__v9_write_probe__.txt'}
+
+          tracked = subprocess.check_output(['git','ls-files','-z']).decode().split('\0')
+          selected = []
+          for raw in tracked:
+              if not raw:
+                  continue
+              p = Path(raw)
+              if p.parts and p.parts[0] in excluded_roots:
+                  continue
+              if raw in excluded_files:
+                  continue
+              src = root / p
+              if not src.is_file():
+                  continue
+              dst = out / p
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copyfile(src, dst)
+              selected.append(p.as_posix())
+
+          if not selected:
+              raise SystemExit('No public snapshot files selected')
+
+          manifest = []
+          for rel in sorted(selected):
+              data = (out / rel).read_bytes()
+              manifest.append(f"{hashlib.sha256(data).hexdigest()}  {rel}")
+          Path('supply-chain/SHA256SUMS.txt').write_text('\n'.join(manifest)+'\n', encoding='utf-8')
+          Path('supply-chain/FILES.txt').write_text('\n'.join(sorted(selected))+'\n', encoding='utf-8')
+          print(f'Public evidence snapshot files: {len(selected)}')
+
+      - name: Public secret and staging exclusion guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f supply-chain/public-snapshot/index.html
+          test -f supply-chain/public-snapshot/config.js
+          for forbidden in .payload .v9latest .v9verified .v9payload .v9xz .v9b64 .v9stage exact-payload; do
+            if find supply-chain/public-snapshot -path "*/$forbidden*" -print -quit | grep -q .; then
+              echo "Staging material escaped into audited snapshot: $forbidden" >&2
+              exit 1
+            fi
+          done
+          if grep -R -n -E "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]{12,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----" supply-chain/public-snapshot; then
+            echo 'Potential secret escaped into audited public snapshot.' >&2
+            exit 1
+          fi
+          echo 'Public snapshot exclusion/secret guard PASS'
+
+      - name: Create deterministic runtime evidence archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner \
+            -czf supply-chain/site-public-snapshot.tar.gz -C supply-chain/public-snapshot .
+          sha256sum supply-chain/site-public-snapshot.tar.gz | tee supply-chain/ARCHIVE_SHA256.txt
+          (cd supply-chain/public-snapshot && sha256sum -c ../SHA256SUMS.txt)
+
+      - name: Generate SPDX JSON SBOM
+        uses: anchore/sbom-action@v0.24.0
+        with:
+          path: ./supply-chain/public-snapshot
+          format: spdx-json
+          output-file: ./supply-chain/sbom.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Validate evidence files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s supply-chain/site-public-snapshot.tar.gz
+          test -s supply-chain/SHA256SUMS.txt
+          test -s supply-chain/ARCHIVE_SHA256.txt
+          test -s supply-chain/sbom.spdx.json
+          python - <<'PY'
+          import json
+          data=json.load(open('supply-chain/sbom.spdx.json',encoding='utf-8'))
+          if data.get('spdxVersion') != 'SPDX-2.3':
+              raise SystemExit(f"Unexpected SPDX version: {data.get('spdxVersion')}")
+          print('SPDX JSON validation PASS')
+          PY
+
+      - name: Attest build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: supply-chain/site-public-snapshot.tar.gz
+
+      - name: Attest SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: supply-chain/site-public-snapshot.tar.gz
+          sbom-path: supply-chain/sbom.spdx.json
+
+      - name: Upload immutable evidence bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-integrity-${{ github.sha }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            supply-chain/site-public-snapshot.tar.gz
+            supply-chain/SHA256SUMS.txt
+            supply-chain/ARCHIVE_SHA256.txt
+            supply-chain/FILES.txt
+            supply-chain/sbom.spdx.json
