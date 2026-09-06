@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="robots" content="index,follow">
+  <meta name="description" content="بیانیه دسترس‌پذیری وب‌سایت دندانپزشکی دکتر مینا مازندرانی؛ هدف WCAG 2.2 AA، وضعیت آزمون‌های خودکار و تست‌های انسانی باقی‌مانده.">
+  <link rel="canonical" href="https://galaxy1364.github.io/SiteMinadental/accessibility.html">
+  <title>دسترس‌پذیری | دندانپزشکی دکتر مینا مازندرانی</title>
+  <style>
+    *{box-sizing:border-box}html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}body{margin:0;font-family:Tahoma,Arial,sans-serif;color:#173d45;background:radial-gradient(circle at 12% 8%,rgba(91,141,239,.18),transparent 30%),radial-gradient(circle at 88% 72%,rgba(236,108,169,.15),transparent 32%),linear-gradient(180deg,#e5faf5,#eef5ff 48%,#f5efff);line-height:2}.skip{position:fixed;top:8px;right:8px;z-index:10;transform:translateY(-150%);background:#fff;color:#092f35;padding:8px 14px;border-radius:10px}.skip:focus{transform:none}.wrap{width:min(920px,calc(100% - 28px));margin:auto}.top{padding:22px 0}.brand{display:flex;align-items:center;justify-content:space-between;gap:16px}.brand strong{font-size:.95rem}.back{display:inline-flex;align-items:center;min-height:44px;padding:8px 15px;border:1px solid rgba(17,94,89,.18);background:rgba(255,255,255,.72);border-radius:999px;color:#115e59;text-decoration:none;font-weight:800}.hero{padding:54px 0 26px}.eyebrow{display:inline-block;padding:6px 13px;border-radius:999px;background:#fff;color:#315ea8;font-weight:800;font-size:.78rem;box-shadow:0 9px 30px rgba(33,82,91,.08)}h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.35;margin:14px 0;color:#0b343b}h2{font-size:1.15rem;color:#0c4d50;margin:0 0 10px}p,li{color:#45636b}.lead{font-size:1rem;max-width:760px}.status{margin:24px 0;padding:16px 18px;border-radius:18px;background:rgba(255,255,255,.8);border:1px solid rgba(49,94,168,.15);box-shadow:0 14px 42px rgba(31,70,81,.08)}.status strong{color:#8a5a00}.grid{display:grid;gap:16px;padding:18px 0 58px}.card{padding:22px;border-radius:22px;background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.88);box-shadow:0 15px 45px rgba(40,73,88,.09);backdrop-filter:blur(12px)}ul{margin:6px 0;padding-right:22px}.done{border-right:4px solid #0d9488}.pending{border-right:4px solid #d97706}.meta{font-size:.78rem;color:#6b7f85}kbd{direction:ltr;background:#edf5f5;border:1px solid #cfe1e1;padding:2px 7px;border-radius:7px}footer{padding:22px 0 42px;border-top:1px solid rgba(17,94,89,.12);font-size:.78rem;color:#60777d}a:focus-visible,summary:focus-visible{outline:3px solid #f59e0b;outline-offset:3px}@media(max-width:640px){.brand{align-items:flex-start;flex-direction:column}.hero{padding-top:30px}.card{padding:18px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">پرش به محتوای اصلی</a>
+<header class="top"><div class="wrap brand"><strong>دندانپزشکی دکتر مینا مازندرانی</strong><a class="back" href="./">بازگشت به سایت</a></div></header>
+<main id="main" class="wrap">
+  <section class="hero" aria-labelledby="a11y-title">
+    <span class="eyebrow">Accessibility</span>
+    <h1 id="a11y-title">دسترس‌پذیری، با وضعیت آزمون شفاف</h1>
+    <p class="lead">هدف فنی پروژه، هم‌ترازی با WCAG 2.2 سطح AA و تجربه قابل‌استفاده برای صفحه‌کلید، بزرگ‌نمایی، فناوری‌های کمکی و کاربران حساس به حرکت است. این هدف با «گواهی انطباق کامل» یکی نیست.</p>
+    <div class="status" role="status"><strong>وضعیت فعلی:</strong> بخشی از کنترل‌ها به‌صورت خودکار در CI بررسی شده‌اند، اما تست انسانی VoiceOver، TalkBack، Zoom 200–400٪ و ماتریس کامل دستگاه/مرورگر هنوز Evidence نهایی ندارد.</div>
+    <p class="meta">آخرین بازبینی: ۶ سپتامبر ۲۰۲۶</p>
+  </section>
+
+  <div class="grid">
+    <section class="card done" aria-labelledby="implemented"><h2 id="implemented">۱. کنترل‌های پیاده‌سازی‌شده</h2><ul><li>زبان فارسی و جهت RTL در صفحات عمومی.</li><li>Skip Link برای عبور مستقیم به محتوای اصلی در این صفحه.</li><li>Focus قابل‌مشاهده برای تعاملات صفحه‌کلیدی.</li><li>پشتیبانی از <code>prefers-reduced-motion</code> برای کاهش حرکت.</li><li>تقویت label/ARIA برخی کنترل‌های Root از طریق لایه Hardening.</li><li>بررسی خودکار بخشی از HTML، IDها، لینک‌های محلی و تصاویر در CI Enterprise.</li></ul></section>
+
+    <section class="card pending" aria-labelledby="manual"><h2 id="manual">۲. آزمون‌هایی که هنوز باید انسانی انجام شوند</h2><ul><li>VoiceOver روی iPhone/iPad و Safari.</li><li>TalkBack روی Android/Chrome.</li><li>پیمایش کامل بدون ماوس فقط با <kbd>Tab</kbd>، <kbd>Shift</kbd> + <kbd>Tab</kbd> و کلیدهای استاندارد کنترل.</li><li>Zoom و Reflow در 200٪ تا 400٪.</li><li>بررسی ترتیب خواندن، نام قابل‌دسترسی، خطاهای فرم و announcementهای زنده.</li><li>Touch target، orientation و رفتار در اندازه‌های واقعی دستگاه.</li></ul></section>
+
+    <section class="card" aria-labelledby="target"><h2 id="target">۳. استاندارد هدف</h2><p>Baseline پروژه WCAG 2.2 AA است. ابزارهای خودکار فقط بخشی از مشکلات را پیدا می‌کنند؛ بنابراین PASS خودکار به‌تنهایی اثبات دسترس‌پذیری کامل نیست و تا اجرای تست‌های انسانی بالا، عبارت «کاملاً منطبق» استفاده نمی‌شود.</p></section>
+
+    <section class="card" aria-labelledby="content"><h2 id="content">۴. محتوای پزشکی و فهم‌پذیری</h2><p>محتوای عمومی باید تا حد امکان با زبان روشن، عنوان‌بندی قابل پیمایش و هشدارهای واضح ارائه شود. محتوای آموزشی نباید جای تشخیص یا ارزیابی بالینی شخصی را بگیرد. هر قابلیت هوشمند آینده نیز باید uncertainty و مسیر ارجاع به انسان را آشکار کند.</p></section>
+
+    <section class="card" aria-labelledby="report"><h2 id="report">۵. گزارش مشکل</h2><p>تا زمان تأیید کانال عمومی تماس، این صفحه شماره یا ایمیل حدسی منتشر نمی‌کند. پس از تأیید Owner Truth، مسیر واقعی گزارش مانع دسترس‌پذیری در همین صفحه فعال می‌شود و باید امکان شرح صفحه، دستگاه، مرورگر و نوع مشکل را فراهم کند.</p></section>
+
+    <section class="card" aria-labelledby="release"><h2 id="release">۶. قانون Release</h2><p>هر تغییر عمده در Navigation، فرم، Portal، Modal/Sheet، PWA یا محتوای تعاملی باید تست دسترس‌پذیری مرتبط را دوباره اجرا کند. Regression دسترس‌پذیری برای گرفتن چراغ سبز CI نباید مخفی یا مستثنی شود.</p></section>
+  </div>
+</main>
+<footer><div class="wrap">هدف دسترس‌پذیری پروژه قابل‌اندازه‌گیری است؛ ادعای کامل فقط پس از Evidence انسانی و فنی مجاز است.</div></footer>
+</body>
+</html>
