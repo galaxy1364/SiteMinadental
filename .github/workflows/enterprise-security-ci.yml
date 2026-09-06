@@ -6,6 +6,7 @@ on:
     paths:
       - '**/*.html'
       - '**/*.js'
+      - '**/*.css'
       - '**/*.json'
       - '**/*.xml'
       - '**/*.txt'
@@ -37,7 +38,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          current=(config.js path-fix.js site-hardening.js governance-links.js pwa-runtime.js sw.js)
+          current=(config.js path-fix.js site-hardening.js governance-links.js status-runtime.js pwa-runtime.js sw.js)
           for file in "${current[@]}"; do
             test -f "$file"
             node --check "$file"
@@ -84,28 +85,128 @@ jobs:
           grep -q "cache: 'no-store'" sw.js
           echo 'Privacy/PWA contract PASS'
 
-      - name: Governance discovery contract
+      - name: Governance, AI and medical editorial contract
         shell: bash
         run: |
           set -euo pipefail
-          for page in privacy.html accessibility.html; do
+          pages=(privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html)
+          for page in "${pages[@]}"; do
             test -f "$page"
             grep -q '<html lang="fa" dir="rtl">' "$page"
             grep -q '<main ' "$page"
+            grep -q 'href="./governance.css"' "$page"
+            if grep -E -n '<style([ >])|style=' "$page"; then
+              echo "Inline style regression in $page; governance surfaces must remain CSP-ready." >&2
+              exit 1
+            fi
           done
 
+          test -f governance.css
+          test -f governance-nav.css
+          grep -q '<link rel="stylesheet" href="./governance-nav.css"' index.html
           grep -q '<script src="./governance-links.js" defer></script>' index.html
           grep -q 'data-mina-governance-links' governance-links.js
+          if grep -E -n '\.style\.|cssText|setAttribute\([[:space:]]*["'"']style' governance-links.js; then
+            echo 'Inline runtime styling regression detected in governance-links.js.' >&2
+            exit 1
+          fi
+
+          for route in status privacy accessibility ai-transparency editorial-governance; do
+            grep -q "SiteMinadental/${route}.html" sitemap.xml
+          done
+          grep -q "'./status.html'" governance-links.js
           grep -q "'./privacy.html'" governance-links.js
           grep -q "'./accessibility.html'" governance-links.js
-          grep -q 'SiteMinadental/privacy.html' sitemap.xml
-          grep -q 'SiteMinadental/accessibility.html' sitemap.xml
+          grep -q "'./ai-transparency.html'" governance-links.js
+          grep -q "'./editorial-governance.html'" governance-links.js
 
-          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.748836|51\.247835|Dr\.mina\.mazandarani|dr_mina_mazandarani' privacy.html accessibility.html; then
+          grep -q '<script src="./config.js"></script>' status.html
+          grep -q '<script src="./status-runtime.js" defer></script>' status.html
+          grep -q 'data-runtime-flag="bookingConnected"' status.html
+          grep -q 'MINA_PUBLIC_CONFIG' status-runtime.js
+
+          grep -q 'تشخیص قطعی' ai-transparency.html
+          grep -q 'تجویز دارو' ai-transparency.html
+          grep -q 'Human handoff\|human handoff' ai-transparency.html
+          grep -q 'Medical Review' editorial-governance.html
+          grep -q 'Truth Review' editorial-governance.html
+          grep -q 'Revision history\|Revision History\|Revision history' editorial-governance.html
+
+          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.748836|51\.247835|Dr\.mina\.mazandarani|dr_mina_mazandarani' "${pages[@]}"; then
             echo 'Unverified owner/provider data escaped into governance pages.' >&2
             exit 1
           fi
-          echo 'Governance discovery contract PASS'
+          echo 'Governance/AI/editorial contract PASS'
+
+      - name: Governance HTML accessibility and local-link audit
+        shell: python
+        run: |
+          from pathlib import Path
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit
+          import sys
+
+          pages = [Path(p) for p in (
+              'privacy.html','accessibility.html','status.html',
+              'ai-transparency.html','editorial-governance.html'
+          )]
+          failures = []
+
+          class Audit(HTMLParser):
+              def __init__(self, page):
+                  super().__init__(convert_charrefs=True)
+                  self.page = page
+                  self.html = {}
+                  self.ids = set()
+                  self.duplicates = set()
+                  self.links = []
+                  self.main = 0
+                  self.h1 = 0
+                  self.skip_to_main = False
+              def handle_starttag(self, tag, attrs):
+                  a = dict(attrs)
+                  if tag == 'html': self.html = a
+                  if tag == 'main': self.main += 1
+                  if tag == 'h1': self.h1 += 1
+                  if tag == 'a':
+                      href = a.get('href','')
+                      self.links.append((href,a))
+                      if href == '#main': self.skip_to_main = True
+                  if 'id' in a:
+                      if a['id'] in self.ids: self.duplicates.add(a['id'])
+                      self.ids.add(a['id'])
+
+          for page in pages:
+              audit = Audit(page)
+              audit.feed(page.read_text('utf-8'))
+              if audit.html.get('lang') != 'fa' or audit.html.get('dir') != 'rtl':
+                  failures.append(f'{page}: expected lang=fa dir=rtl')
+              if audit.main != 1: failures.append(f'{page}: expected exactly one main landmark')
+              if audit.h1 != 1: failures.append(f'{page}: expected exactly one h1')
+              if not audit.skip_to_main: failures.append(f'{page}: missing skip link to #main')
+              if audit.duplicates: failures.append(f'{page}: duplicate ids {sorted(audit.duplicates)}')
+
+              for href, attrs in audit.links:
+                  if href == '#': failures.append(f'{page}: empty hash link')
+                  if attrs.get('target') == '_blank':
+                      rel = set((attrs.get('rel') or '').split())
+                      if not {'noopener','noreferrer'} <= rel:
+                          failures.append(f'{page}: target=_blank missing noopener noreferrer')
+                  if not href or href.startswith(('#','mailto:','tel:','sms:','javascript:','data:')):
+                      continue
+                  parsed = urlsplit(href)
+                  if parsed.scheme or parsed.netloc: continue
+                  target = href.split('#',1)[0].split('?',1)[0]
+                  if not target: continue
+                  candidate = page.parent / target
+                  if candidate.is_dir(): candidate = candidate / 'index.html'
+                  elif candidate.suffix == '': candidate = candidate / 'index.html'
+                  if not candidate.exists(): failures.append(f'{page}: broken local link {href}')
+
+          if failures:
+              print('\n'.join(failures))
+              sys.exit(1)
+          print(f'Governance HTML audit PASS: {len(pages)} pages')
 
   production-gate:
     name: V9 production integrity gate
