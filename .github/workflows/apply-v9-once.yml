@@ -25,6 +25,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      source_mode: ${{ steps.recover.outputs.source_mode }}
       selected_ref: ${{ steps.recover.outputs.selected_ref }}
       archive_sha256: ${{ steps.recover.outputs.archive_sha256 }}
     steps:
@@ -33,7 +34,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Recover first content-valid historical archive
+      - name: Recover first exact content-valid V9 snapshot
         id: recover
         shell: bash
         run: |
@@ -42,62 +43,102 @@ jobs:
           test -f "$manifest"
           test "$(wc -l < "$manifest")" -eq 69
 
-          mapfile -t refs < <(git log --all --format='%H' -- .v9stage/runtime.tar.xz | awk '!seen[$0]++')
-          echo "Archive snapshots found: ${#refs[@]}"
-          test "${#refs[@]}" -gt 0
+          materialize_manifest_tree() {
+            local ref="$1" target="$2"
+            rm -rf "$target"
+            mkdir -p "$target"
+            while read -r expected path; do
+              [ -n "$path" ] || continue
+              if ! git cat-file -e "$ref:$path" 2>/dev/null; then
+                return 1
+              fi
+              mkdir -p "$target/$(dirname "$path")"
+              git show "$ref:$path" > "$target/$path"
+            done < "$manifest"
+          }
+
+          verify_manifest_tree() {
+            local target="$1"
+            test "$(find "$target" -type f | wc -l)" -eq 69 || return 1
+            (cd "$target" && sha256sum -c "$manifest")
+          }
 
           selected=''
-          for ref in "${refs[@]}"; do
-            echo "=== Auditing archive snapshot $ref ==="
-            if ! git cat-file -e "$ref:.v9stage/runtime.tar.xz" 2>/dev/null; then
-              echo 'archive absent at this snapshot'
+          source_mode=''
+          archive_sha=''
+
+          echo '=== Phase 1: historical Git root trees ==='
+          mapfile -t version_refs < <(git log --all --format='%H' -- version.json | awk '!seen[$0]++')
+          echo "version snapshots found: ${#version_refs[@]}"
+          for ref in "${version_refs[@]}"; do
+            if ! git cat-file -e "$ref:version.json" 2>/dev/null; then
               continue
             fi
-
-            git show "$ref:.v9stage/runtime.tar.xz" > /tmp/candidate.tar.xz
-            size="$(wc -c < /tmp/candidate.tar.xz)"
-            sha="$(sha256sum /tmp/candidate.tar.xz | awk '{print $1}')"
-            echo "size=$size sha256=$sha"
-
-            if ! xz -t /tmp/candidate.tar.xz; then
-              echo 'INVALID_XZ'
+            version_text="$(git show "$ref:version.json" 2>/dev/null || true)"
+            if [[ "$version_text" != *'2026.08.30.9'* ]] || [[ "$version_text" != *'enterprise-v9'* ]]; then
               continue
             fi
-
-            rm -rf /tmp/candidate-site
-            mkdir -p /tmp/candidate-site
-            if ! tar -xJf /tmp/candidate.tar.xz -C /tmp/candidate-site; then
-              echo 'INVALID_TAR'
-              continue
+            echo "Auditing direct V9 root tree $ref"
+            if materialize_manifest_tree "$ref" /tmp/candidate-site && verify_manifest_tree /tmp/candidate-site; then
+              selected="$ref"
+              source_mode='tree'
+              rm -rf /tmp/v9-site
+              mv /tmp/candidate-site /tmp/v9-site
+              echo "SELECTED_DIRECT_TREE=$ref"
+              break
             fi
-
-            count="$(find /tmp/candidate-site -type f | wc -l)"
-            echo "file_count=$count"
-            if [ "$count" -ne 69 ]; then
-              echo 'INVALID_FILE_COUNT'
-              continue
-            fi
-
-            if ! (cd /tmp/candidate-site && sha256sum -c "$manifest"); then
-              echo 'MANIFEST_MISMATCH'
-              continue
-            fi
-
-            selected="$ref"
-            cp /tmp/candidate.tar.xz /tmp/v9-runtime.tar.xz
-            rm -rf /tmp/v9-site
-            mv /tmp/candidate-site /tmp/v9-site
-            echo "selected_ref=$ref" >> "$GITHUB_OUTPUT"
-            echo "archive_sha256=$sha" >> "$GITHUB_OUTPUT"
-            echo "archive_sha256=$sha" >> "$GITHUB_ENV"
-            echo "SELECTED_VALID_ARCHIVE=$ref"
-            break
+            echo 'DIRECT_TREE_MANIFEST_MISMATCH'
           done
 
           if [ -z "$selected" ]; then
-            echo 'No historical .v9stage/runtime.tar.xz snapshot passes XZ + 69-file + per-file SHA256 manifest verification.' >&2
+            echo '=== Phase 2: historical .v9stage archives ==='
+            mapfile -t refs < <(git log --all --format='%H' -- .v9stage/runtime.tar.xz | awk '!seen[$0]++')
+            echo "archive snapshots found: ${#refs[@]}"
+            for ref in "${refs[@]}"; do
+              echo "Auditing archive snapshot $ref"
+              if ! git cat-file -e "$ref:.v9stage/runtime.tar.xz" 2>/dev/null; then
+                continue
+              fi
+              git show "$ref:.v9stage/runtime.tar.xz" > /tmp/candidate.tar.xz
+              size="$(wc -c < /tmp/candidate.tar.xz)"
+              sha="$(sha256sum /tmp/candidate.tar.xz | awk '{print $1}')"
+              echo "size=$size sha256=$sha"
+              if ! xz -t /tmp/candidate.tar.xz; then
+                echo 'INVALID_XZ'
+                continue
+              fi
+              rm -rf /tmp/candidate-site
+              mkdir -p /tmp/candidate-site
+              if ! tar -xJf /tmp/candidate.tar.xz -C /tmp/candidate-site; then
+                echo 'INVALID_TAR'
+                continue
+              fi
+              if ! verify_manifest_tree /tmp/candidate-site; then
+                echo 'ARCHIVE_MANIFEST_MISMATCH'
+                continue
+              fi
+              selected="$ref"
+              source_mode='archive'
+              archive_sha="$sha"
+              cp /tmp/candidate.tar.xz /tmp/v9-runtime.tar.xz
+              rm -rf /tmp/v9-site
+              mv /tmp/candidate-site /tmp/v9-site
+              echo "SELECTED_VALID_ARCHIVE=$ref"
+              break
+            done
+          fi
+
+          if [ -z "$selected" ]; then
+            echo 'No direct historical V9 tree or .v9stage archive passes the exact 69-file SHA256 manifest.' >&2
             exit 1
           fi
+
+          echo "source_mode=$source_mode" >> "$GITHUB_OUTPUT"
+          echo "selected_ref=$selected" >> "$GITHUB_OUTPUT"
+          echo "archive_sha256=$archive_sha" >> "$GITHUB_OUTPUT"
+          echo "source_mode=$source_mode" >> "$GITHUB_ENV"
+          echo "selected_ref=$selected" >> "$GITHUB_ENV"
+          echo "archive_sha256=$archive_sha" >> "$GITHUB_ENV"
 
       - name: Verify V9 identity and required runtime
         shell: bash
@@ -129,21 +170,18 @@ jobs:
         run: |
           set -euo pipefail
           cd /tmp/v9-site
-
           if grep -R -n -E \
             '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|خیابان امیرکبیر|Dr\.mina\.mazandarani|dr_mina_mazandarani' \
             --include='*.html' --include='*.js' --include='*.json' --include='*.xml' --include='*.txt' .; then
             echo 'Unverified owner/provider data is embedded in recovered V9 payload.' >&2
             exit 1
           fi
-
           if grep -R -n -E \
             "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" \
             --include='*.html' --include='*.js' --include='*.json' .; then
             echo 'Potential server secret found in public V9 runtime.' >&2
             exit 1
           fi
-
           grep -q 'no-store' _headers
           grep -q 'Content-Security-Policy:' _headers
           if grep -q "unsafe-eval\|unsafe-inline" _headers; then
@@ -163,15 +201,16 @@ jobs:
           node --check assets/js/admin.js
           node --check assets/js/portal.js
           node --check assets/js/status.js
-          echo "Recovered V9 payload verified. Archive SHA256: $archive_sha256"
+          echo "Recovered V9 payload verified from $source_mode at $selected_ref"
 
       - name: Record recovery evidence
         shell: bash
         run: |
           set -euo pipefail
           {
-            echo "selected_ref=${{ steps.recover.outputs.selected_ref }}"
-            echo "archive_sha256=${{ steps.recover.outputs.archive_sha256 }}"
+            echo "source_mode=$source_mode"
+            echo "selected_ref=$selected_ref"
+            echo "archive_sha256=$archive_sha256"
             echo 'runtime_files=69'
             echo 'manifest=PASS'
             cat /tmp/v9-site/version.json
@@ -200,23 +239,38 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reconstruct the exact verified archive from immutable Git history
+      - name: Reconstruct exact verified runtime from immutable Git history
         shell: bash
         run: |
           set -euo pipefail
+          mode='${{ needs.verify-payload.outputs.source_mode }}'
           ref='${{ needs.verify-payload.outputs.selected_ref }}'
-          expected='${{ needs.verify-payload.outputs.archive_sha256 }}'
+          manifest="$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
+          test -n "$mode"
           test -n "$ref"
-          test -n "$expected"
-          git show "$ref:.v9stage/runtime.tar.xz" > /tmp/v9-runtime.tar.xz
-          test "$(sha256sum /tmp/v9-runtime.tar.xz | awk '{print $1}')" = "$expected"
-          xz -t /tmp/v9-runtime.tar.xz
           rm -rf /tmp/v9-site
           mkdir -p /tmp/v9-site
-          tar -xJf /tmp/v9-runtime.tar.xz -C /tmp/v9-site
+
+          if [ "$mode" = 'tree' ]; then
+            while read -r expected path; do
+              [ -n "$path" ] || continue
+              mkdir -p "/tmp/v9-site/$(dirname "$path")"
+              git show "$ref:$path" > "/tmp/v9-site/$path"
+            done < "$manifest"
+          elif [ "$mode" = 'archive' ]; then
+            expected='${{ needs.verify-payload.outputs.archive_sha256 }}'
+            git show "$ref:.v9stage/runtime.tar.xz" > /tmp/v9-runtime.tar.xz
+            test "$(sha256sum /tmp/v9-runtime.tar.xz | awk '{print $1}')" = "$expected"
+            xz -t /tmp/v9-runtime.tar.xz
+            tar -xJf /tmp/v9-runtime.tar.xz -C /tmp/v9-site
+          else
+            echo "Unsupported recovery mode: $mode" >&2
+            exit 1
+          fi
+
           test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
           cd /tmp/v9-site
-          sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
+          sha256sum -c "$manifest"
           grep -q '2026.08.30.9' version.json
           grep -q 'enterprise-v9' version.json
 
@@ -242,7 +296,6 @@ jobs:
             -exec rm -rf {} +
           cp -a /tmp/v9-site/. .
           cp /tmp/MASTER_README.md README.md
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
