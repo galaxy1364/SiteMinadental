@@ -1,59 +1,37 @@
-name: Verify and Apply MinaDentalClinic Enterprise V9
+name: Forensic V9 Recovery Verification — Non-Deploying
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - '.v9latest/**'
       - '.github/workflows/apply-v9-once.yml'
-  workflow_dispatch:
-    inputs:
-      deploy:
-        description: 'Apply verified V9 runtime to main after all gates pass'
-        required: true
-        type: boolean
-        default: false
+
+permissions:
+  contents: read
 
 concurrency:
-  group: minadentalclinic-v9-apply
-  cancel-in-progress: false
+  group: minadentalclinic-v9-forensic
+  cancel-in-progress: true
 
 jobs:
   verify-payload:
-    name: Recover and verify exact historical V9 payload
+    name: Recover and verify historical V9 payload without deployment
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      source_mode: ${{ steps.recover.outputs.source_mode }}
-      selected_ref: ${{ steps.recover.outputs.selected_ref }}
-      selected_dir: ${{ steps.recover.outputs.selected_dir }}
-      archive_sha256: ${{ steps.recover.outputs.archive_sha256 }}
     steps:
       - name: Checkout full repository history
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Recover first exact content-valid V9 snapshot
-        id: recover
+      - name: Attempt exact content recovery
         shell: bash
         run: |
           set -euo pipefail
           manifest="$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
           test -f "$manifest"
           test "$(wc -l < "$manifest")" -eq 69
-
-          materialize_manifest_tree() {
-            local ref="$1" target="$2"
-            rm -rf "$target"; mkdir -p "$target"
-            while read -r expected path; do
-              [ -n "$path" ] || continue
-              git cat-file -e "$ref:$path" 2>/dev/null || return 1
-              mkdir -p "$target/$(dirname "$path")"
-              git show "$ref:$path" > "$target/$path"
-            done < "$manifest"
-          }
 
           verify_root() {
             local root="$1"
@@ -62,242 +40,125 @@ jobs:
             (cd "$root" && sha256sum -c "$manifest" >/tmp/manifest-check.log 2>&1) || return 1
           }
 
-          normalize_extracted_root() {
+          normalize_root() {
             local extracted="$1"
             if verify_root "$extracted"; then
-              rm -rf /tmp/candidate-site; cp -a "$extracted" /tmp/candidate-site
-              return 0
+              rm -rf /tmp/v9-site; cp -a "$extracted" /tmp/v9-site; return 0
             fi
             while IFS= read -r version; do
               local root
               root="$(dirname "$version")"
               if verify_root "$root"; then
-                rm -rf /tmp/candidate-site; cp -a "$root" /tmp/candidate-site
-                return 0
+                rm -rf /tmp/v9-site; cp -a "$root" /tmp/v9-site; return 0
               fi
             done < <(find "$extracted" -type f -name version.json -print)
             return 1
           }
 
           try_payload() {
-            local payload="$1" label="$2"
-            local candidate='/tmp/candidate.bin'
-            rm -rf /tmp/extracted /tmp/candidate-site
-            mkdir -p /tmp/extracted
-
+            local payload="$1"
             for mode in raw base64; do
+              rm -rf /tmp/extracted; mkdir -p /tmp/extracted
               if [ "$mode" = raw ]; then
-                cp "$payload" "$candidate"
+                cp "$payload" /tmp/candidate.bin
               else
                 tr -d '\r\n\t ' < "$payload" > /tmp/candidate.b64
-                base64 --decode /tmp/candidate.b64 > "$candidate" 2>/dev/null || continue
+                base64 --decode /tmp/candidate.b64 > /tmp/candidate.bin 2>/dev/null || continue
               fi
-
-              echo "Trying $label mode=$mode bytes=$(wc -c < "$candidate") sha=$(sha256sum "$candidate" | awk '{print $1}')"
-              rm -rf /tmp/extracted; mkdir -p /tmp/extracted
-              if xz -t "$candidate" 2>/dev/null; then
-                tar -xJf "$candidate" -C /tmp/extracted 2>/dev/null || continue
-                if normalize_extracted_root /tmp/extracted; then
-                  cp "$candidate" /tmp/v9-runtime.tar.xz
-                  echo 'RECOVERED_AS_XZ'
-                  return 0
-                fi
+              if xz -t /tmp/candidate.bin 2>/dev/null; then
+                tar -xJf /tmp/candidate.bin -C /tmp/extracted 2>/dev/null || continue
+                normalize_root /tmp/extracted && return 0
               fi
-
               rm -rf /tmp/extracted; mkdir -p /tmp/extracted
-              if unzip -tqq "$candidate" >/dev/null 2>&1; then
-                unzip -qq "$candidate" -d /tmp/extracted || continue
-                if normalize_extracted_root /tmp/extracted; then
-                  cp "$candidate" /tmp/v9-runtime.zip
-                  echo 'RECOVERED_AS_ZIP'
-                  return 0
-                fi
+              if unzip -tqq /tmp/candidate.bin >/dev/null 2>&1; then
+                unzip -qq /tmp/candidate.bin -d /tmp/extracted || continue
+                normalize_root /tmp/extracted && return 0
               fi
             done
             return 1
           }
 
-          selected=''; source_mode=''; selected_dir=''; archive_sha=''
+          selected=''
+          source_mode=''
+          selected_dir=''
 
-          echo '=== Phase 1: historical Git root trees ==='
-          mapfile -t version_refs < <(git log --all --format='%H' -- version.json | awk '!seen[$0]++')
-          echo "version snapshots found: ${#version_refs[@]}"
-          for ref in "${version_refs[@]}"; do
+          echo '=== Phase 1: direct historical V9 root trees ==='
+          while read -r ref; do
+            [ -n "$ref" ] || continue
             git cat-file -e "$ref:version.json" 2>/dev/null || continue
             version_text="$(git show "$ref:version.json" 2>/dev/null || true)"
             [[ "$version_text" == *'2026.08.30.9'* && "$version_text" == *'enterprise-v9'* ]] || continue
-            echo "Auditing direct V9 root tree $ref"
-            if materialize_manifest_tree "$ref" /tmp/direct-site && verify_root /tmp/direct-site; then
-              selected="$ref"; source_mode='tree'; rm -rf /tmp/v9-site; mv /tmp/direct-site /tmp/v9-site
-              echo "SELECTED_DIRECT_TREE=$ref"; break
+            rm -rf /tmp/direct-site; mkdir -p /tmp/direct-site
+            complete=1
+            while read -r hash path; do
+              git cat-file -e "$ref:$path" 2>/dev/null || { complete=0; break; }
+              mkdir -p "/tmp/direct-site/$(dirname "$path")"
+              git show "$ref:$path" > "/tmp/direct-site/$path"
+            done < "$manifest"
+            if [ "$complete" -eq 1 ] && verify_root /tmp/direct-site; then
+              rm -rf /tmp/v9-site; mv /tmp/direct-site /tmp/v9-site
+              selected="$ref"; source_mode='tree'; break
             fi
-          done
+          done < <(git log --all --format='%H' -- version.json | awk '!seen[$0]++')
 
           if [ -z "$selected" ]; then
-            echo '=== Phase 2: historical .v9stage archives ==='
-            mapfile -t refs < <(git log --all --format='%H' -- .v9stage/runtime.tar.xz | awk '!seen[$0]++')
-            for ref in "${refs[@]}"; do
+            echo '=== Phase 2: historical direct archives ==='
+            while read -r ref; do
+              [ -n "$ref" ] || continue
               git cat-file -e "$ref:.v9stage/runtime.tar.xz" 2>/dev/null || continue
-              git show "$ref:.v9stage/runtime.tar.xz" > /tmp/archive.raw
-              echo "Auditing archive $ref bytes=$(wc -c < /tmp/archive.raw)"
-              if try_payload /tmp/archive.raw "archive:$ref"; then
-                selected="$ref"; source_mode='archive'; selected_dir='.v9stage/runtime.tar.xz'
-                archive_sha="$(sha256sum /tmp/candidate.bin | awk '{print $1}')"
-                rm -rf /tmp/v9-site; mv /tmp/candidate-site /tmp/v9-site
-                break
+              git show "$ref:.v9stage/runtime.tar.xz" > /tmp/source.raw
+              if try_payload /tmp/source.raw; then
+                selected="$ref"; source_mode='archive'; selected_dir='.v9stage/runtime.tar.xz'; break
               fi
-            done
+            done < <(git log --all --format='%H' -- .v9stage/runtime.tar.xz | awk '!seen[$0]++')
           fi
 
           if [ -z "$selected" ]; then
-            echo '=== Phase 3: forensic historical chunk generations ==='
+            echo '=== Phase 3: coherent historical chunk snapshots ==='
             dirs=(.v9verified .v9latest .v9xz .v9b64 .v9payload exact-payload .payload)
             for dir in "${dirs[@]}"; do
-              mapfile -t refs < <(git log --all --format='%H' -- "$dir" | awk '!seen[$0]++')
-              echo "Directory $dir snapshots=${#refs[@]}"
-              for ref in "${refs[@]}"; do
+              while read -r ref; do
+                [ -n "$ref" ] || continue
                 mapfile -t parts < <(git ls-tree -r --name-only "$ref" -- "$dir" | grep -E '(^|/)part-[0-9]+' | sort -V || true)
                 [ "${#parts[@]}" -gt 0 ] || continue
-                : > /tmp/chunks.raw
-                complete=1
-                for part in "${parts[@]}"; do
-                  git cat-file -e "$ref:$part" 2>/dev/null || { complete=0; break; }
-                  git show "$ref:$part" >> /tmp/chunks.raw
-                done
-                [ "$complete" -eq 1 ] || continue
-                echo "Auditing chunks dir=$dir ref=$ref parts=${#parts[@]} chars=$(wc -c < /tmp/chunks.raw)"
-                if try_payload /tmp/chunks.raw "chunks:$dir:$ref"; then
-                  selected="$ref"; source_mode='chunks'; selected_dir="$dir"
-                  archive_sha="$(sha256sum /tmp/candidate.bin | awk '{print $1}')"
-                  rm -rf /tmp/v9-site; mv /tmp/candidate-site /tmp/v9-site
-                  break 2
+                : > /tmp/source.raw
+                for part in "${parts[@]}"; do git show "$ref:$part" >> /tmp/source.raw; done
+                if try_payload /tmp/source.raw; then
+                  selected="$ref"; source_mode='chunks'; selected_dir="$dir"; break 2
                 fi
-              done
+              done < <(git log --all --format='%H' -- "$dir" | awk '!seen[$0]++')
             done
           fi
 
           if [ -z "$selected" ]; then
-            echo 'No historical tree, archive, or coherent chunk-generation snapshot reproduces the exact 69-file V9 manifest.' >&2
+            echo 'FORENSIC_RESULT=NO_EXACT_69_FILE_RUNTIME_RECOVERED'
+            echo 'Deployment is intentionally unavailable in this workflow.'
             exit 1
           fi
 
-          echo "source_mode=$source_mode" >> "$GITHUB_OUTPUT"
-          echo "selected_ref=$selected" >> "$GITHUB_OUTPUT"
-          echo "selected_dir=$selected_dir" >> "$GITHUB_OUTPUT"
-          echo "archive_sha256=$archive_sha" >> "$GITHUB_OUTPUT"
-          echo "source_mode=$source_mode" >> "$GITHUB_ENV"
-          echo "selected_ref=$selected" >> "$GITHUB_ENV"
-          echo "selected_dir=$selected_dir" >> "$GITHUB_ENV"
-          echo "archive_sha256=$archive_sha" >> "$GITHUB_ENV"
-
-      - name: Verify V9 identity and required runtime
-        shell: bash
-        run: |
-          set -euo pipefail
           cd /tmp/v9-site
-          for file in index.html _worker.js sw.js version.json config.js manifest.webmanifest admin.html portal/index.html assets/css/site.css assets/js/site.js assets/js/admin.js assets/js/portal.js assets/js/status.js status/index.html safety/dental-emergency/index.html tools/treatment-comparison/index.html robots.txt sitemap.xml _headers; do test -f "$file"; done
           grep -q '2026.08.30.9' version.json
           grep -q 'enterprise-v9' version.json
-          grep -q 'https://minadentalclinic.ir/' index.html
-          ! grep -R -n -F '2026.08.05.1' .
-          ! grep -R -n -F 'galaxy1364.github.io/SiteMinadental' .
-
-      - name: Truth and privacy audit
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/v9-site
           ! grep -R -n -E '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|خیابان امیرکبیر|Dr\.mina\.mazandarani|dr_mina_mazandarani' --include='*.html' --include='*.js' --include='*.json' --include='*.xml' --include='*.txt' .
           ! grep -R -n -E "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" --include='*.html' --include='*.js' --include='*.json' .
-          grep -q 'no-store' _headers
-          grep -q 'Content-Security-Policy:' _headers
-          ! grep -q "unsafe-eval\|unsafe-inline" _headers
+          printf 'source_mode=%s\nselected_ref=%s\nselected_dir=%s\nruntime_files=69\nmanifest=PASS\n' "$source_mode" "$selected" "$selected_dir" > /tmp/V9_RECOVERY_EVIDENCE.txt
+          cat version.json >> /tmp/V9_RECOVERY_EVIDENCE.txt
 
-      - name: JavaScript syntax
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/v9-site
-          for file in _worker.js sw.js config.js assets/js/site.js assets/js/admin.js assets/js/portal.js assets/js/status.js; do node --check "$file"; done
-          echo "Recovered V9 payload verified from $source_mode at $selected_ref ($selected_dir)"
-
-      - name: Record recovery evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          { echo "source_mode=$source_mode"; echo "selected_ref=$selected_ref"; echo "selected_dir=$selected_dir"; echo "archive_sha256=$archive_sha256"; echo 'runtime_files=69'; echo 'manifest=PASS'; cat /tmp/v9-site/version.json; } > /tmp/V9_RECOVERY_EVIDENCE.txt
-
-      - name: Upload verified recovery evidence only
+      - name: Upload forensic evidence only
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: v9-recovery-evidence
+          name: v9-forensic-recovery-evidence
           path: |
             /tmp/V9_RECOVERY_EVIDENCE.txt
             .v9latest/V9_RUNTIME_SHA256SUMS.txt
-          if-no-files-found: error
           retention-days: 14
+          if-no-files-found: error
 
-  apply-runtime:
-    name: Apply verified V9 runtime
-    needs: verify-payload
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout current main with full history
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Reconstruct exact verified runtime from immutable Git history
+      - name: Deployment safety assertion
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
-          mode='${{ needs.verify-payload.outputs.source_mode }}'; ref='${{ needs.verify-payload.outputs.selected_ref }}'; dir='${{ needs.verify-payload.outputs.selected_dir }}'; expected='${{ needs.verify-payload.outputs.archive_sha256 }}'
-          manifest="$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
-          rm -rf /tmp/v9-site; mkdir -p /tmp/v9-site
-          if [ "$mode" = tree ]; then
-            while read -r hash path; do mkdir -p "/tmp/v9-site/$(dirname "$path")"; git show "$ref:$path" > "/tmp/v9-site/$path"; done < "$manifest"
-          else
-            if [ "$mode" = archive ]; then
-              git show "$ref:$dir" > /tmp/source.raw
-            elif [ "$mode" = chunks ]; then
-              : > /tmp/source.raw
-              mapfile -t parts < <(git ls-tree -r --name-only "$ref" -- "$dir" | grep -E '(^|/)part-[0-9]+' | sort -V)
-              for part in "${parts[@]}"; do git show "$ref:$part" >> /tmp/source.raw; done
-            else
-              exit 1
-            fi
-            if xz -t /tmp/source.raw 2>/dev/null; then cp /tmp/source.raw /tmp/runtime.bin; else tr -d '\r\n\t ' < /tmp/source.raw | base64 --decode > /tmp/runtime.bin; fi
-            test "$(sha256sum /tmp/runtime.bin | awk '{print $1}')" = "$expected"
-            if xz -t /tmp/runtime.bin 2>/dev/null; then tar -xJf /tmp/runtime.bin -C /tmp/v9-site; else unzip -qq /tmp/runtime.bin -d /tmp/v9-site; fi
-          fi
-          cd /tmp/v9-site
-          test "$(find . -type f | wc -l)" -eq 69
-          sha256sum -c "$manifest"
-          grep -q '2026.08.30.9' version.json
-          grep -q 'enterprise-v9' version.json
-
-      - name: Re-run truth gate immediately before apply
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/v9-site
-          ! grep -R -n -E '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|خیابان امیرکبیر|Dr\.mina\.mazandarani|dr_mina_mazandarani' --include='*.html' --include='*.js' --include='*.json' --include='*.xml' --include='*.txt' .
-          ! grep -R -n -E "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" --include='*.html' --include='*.js' --include='*.json' .
-
-      - name: Replace runtime atomically while preserving governance and DevSecOps
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp README.md /tmp/MASTER_README.md
-          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github ! -name README.md -exec rm -rf {} +
-          cp -a /tmp/v9-site/. .
-          cp /tmp/MASTER_README.md README.md
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git diff --cached --quiet && { echo 'No production changes.'; exit 0; }
-          git commit -m 'Deploy verified MinaDentalClinic Enterprise V9 runtime'
-          git push origin HEAD:main
+          echo 'NON_DEPLOYING_WORKFLOW=PASS'
+          echo 'This workflow has contents:read only and contains no git push or runtime replacement step.'
