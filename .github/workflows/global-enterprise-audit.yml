@@ -1,4 +1,4 @@
-# audit-schema: 1.2
+# audit-schema: 1.3
 name: Global Enterprise Audit
 
 on:
@@ -7,6 +7,17 @@ on:
     branches: [main]
     paths:
       - 'preview-r2/**'
+      - 'index.html'
+      - 'privacy.html'
+      - 'accessibility.html'
+      - 'status.html'
+      - 'ai-transparency.html'
+      - 'editorial-governance.html'
+      - 'governance.css'
+      - 'governance-nav.css'
+      - 'governance-links.js'
+      - 'status-runtime.js'
+      - 'config.js'
       - '.github/workflows/global-enterprise-audit.yml'
   schedule:
     - cron: '41 2 * * 3'
@@ -19,11 +30,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  ROOT_URL: https://galaxy1364.github.io/SiteMinadental/
   PREVIEW_URL: https://galaxy1364.github.io/SiteMinadental/preview-r2/
 
 jobs:
   static-integrity:
-    name: Static integrity and route contract
+    name: Static integrity and truth contract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -35,9 +47,15 @@ jobs:
           node --check preview-r2/preview-b.js
           node --check preview-r2/preview-c.js
           node --check preview-r2/preview-d.js
+          node --check governance-links.js
+          node --check status-runtime.js
+          node --check config.js
 
       - name: HTML validation
-        run: npx --yes html-validate@latest preview-r2/index.html
+        run: |
+          set -euo pipefail
+          npx --yes html-validate@latest preview-r2/index.html
+          npx --yes html-validate@latest privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html
 
       - name: Asset and truth contract
         shell: python
@@ -59,6 +77,15 @@ jobs:
           required_routes=['/','/services','/services/implant','/services/laminate-composite','/services/root-canal','/services/oral-surgery','/services/pediatric','/services/bleaching','/services/prosthodontics','/experience','/experience/online-consultation','/experience/cost-estimate','/experience/patient-journey','/portal','/tools/treatment-comparison','/safety/dental-emergency','/ai-info','/status','/privacy','/accessibility','/guides','/qa','/audit']
           for route in required_routes:
               if route not in alljs: failures.append(f'missing route contract: {route}')
+
+          governance=['privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html']
+          for name in governance:
+              page=Path(name)
+              text=page.read_text('utf-8')
+              if 'Content-Security-Policy' not in text: failures.append(f'{name}: missing strict meta CSP')
+              if '<style' in text or ' style=' in text: failures.append(f'{name}: inline style regression')
+              if 'href="./governance.css"' not in text: failures.append(f'{name}: missing shared governance stylesheet')
+
           if failures:
               print('\n'.join(failures)); sys.exit(1)
           print('Static audit PASS')
@@ -74,11 +101,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for i in {1..18}; do
-            if curl -fsSL "$PREVIEW_URL" | grep -q 'preview-d.js'; then exit 0; fi
+          for i in {1..24}; do
+            root_ok=0; preview_ok=0
+            curl -fsSL "$ROOT_URL/status.html" | grep -q 'status-runtime.js' && root_ok=1 || true
+            curl -fsSL "$PREVIEW_URL" | grep -q 'preview-d.js' && preview_ok=1 || true
+            if [ "$root_ok" -eq 1 ] && [ "$preview_ok" -eq 1 ]; then exit 0; fi
             sleep 10
           done
-          echo 'Preview deployment did not become current in time.' >&2
+          echo 'GitHub Pages did not become current in time.' >&2
           exit 1
 
       - name: Install browser audit tools
@@ -92,46 +122,76 @@ jobs:
         run: |
           cat > /tmp/route-audit.cjs <<'NODE'
           const { chromium } = require('playwright');
-          const routes=['/','/services','/services/implant','/services/laminate-composite','/services/root-canal','/services/oral-surgery','/services/pediatric','/services/bleaching','/services/prosthodontics','/experience','/experience/online-consultation','/experience/cost-estimate','/experience/patient-journey','/portal','/tools/treatment-comparison','/safety/dental-emergency','/ai-info','/status','/privacy','/accessibility','/guides','/qa','/audit'];
+          const previewRoutes=['/','/services','/services/implant','/services/laminate-composite','/services/root-canal','/services/oral-surgery','/services/pediatric','/services/bleaching','/services/prosthodontics','/experience','/experience/online-consultation','/experience/cost-estimate','/experience/patient-journey','/portal','/tools/treatment-comparison','/safety/dental-emergency','/ai-info','/status','/privacy','/accessibility','/guides','/qa','/audit'];
+          const rootPages=['','privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html'];
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
-            const base=process.env.PREVIEW_URL;
             const failures=[];
             page.on('pageerror',e=>failures.push('pageerror: '+e.message));
-            for(const route of routes){
-              await page.goto(base+'#'+route,{waitUntil:'networkidle'});
-              await page.waitForTimeout(120);
-              const text=(await page.locator('main').innerText()).trim();
-              if(!text || text.includes('صفحه پیدا نشد')) failures.push(route+': empty/404 render');
+            for(const route of previewRoutes){
+              await page.goto(process.env.PREVIEW_URL+'#'+route,{waitUntil:'networkidle'});
+              await page.waitForTimeout(100);
+              const main=page.locator('main');
+              if(await main.count()===0){failures.push('preview '+route+': no main');continue;}
+              const text=(await main.innerText()).trim();
+              if(!text || text.includes('صفحه پیدا نشد')) failures.push('preview '+route+': empty/404 render');
             }
-            await page.goto(base+'#/');
-            const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2);
-            if(overflow) failures.push('mobile horizontal overflow detected');
+            for(const route of rootPages){
+              await page.goto(process.env.ROOT_URL+route,{waitUntil:'networkidle'});
+              await page.waitForTimeout(150);
+              const body=(await page.locator('body').innerText()).trim();
+              if(!body) failures.push('root '+route+': empty render');
+              if(route){
+                const main=page.locator('main');
+                if(await main.count()!==1) failures.push('root '+route+': expected one main');
+              }
+              const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2);
+              if(overflow) failures.push('root '+route+': mobile horizontal overflow');
+            }
             await browser.close();
             if(failures.length){console.error(failures.join('\n'));process.exit(1)}
-            console.log('Browser route audit PASS: '+routes.length+' routes');
+            console.log('Browser route audit PASS');
           })();
           NODE
           node /tmp/route-audit.cjs
 
-      - name: Lighthouse evidence
+      - name: Lighthouse evidence - preview
         run: |
-          npx lighthouse "$PREVIEW_URL" --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse.json
+          npx lighthouse "$PREVIEW_URL" --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse-preview.json
           node - <<'NODE'
-          const r=require('./lighthouse.json');
+          const r=require('./lighthouse-preview.json');
           const s=r.categories;
           const scores={performance:s.performance.score,accessibility:s.accessibility.score,bestPractices:s['best-practices'].score,seo:s.seo.score};
-          console.log(scores);
-          // SEO is intentionally not gated because the acceptance preview is noindex.
-          if(scores.performance < .80) throw new Error('Performance lab score < 0.80');
-          if(scores.accessibility < .90) throw new Error('Accessibility lab score < 0.90');
-          if(scores.bestPractices < .90) throw new Error('Best Practices score < 0.90');
+          console.log('preview',scores);
+          if(scores.performance < .80) throw new Error('Preview performance lab score < 0.80');
+          if(scores.accessibility < .90) throw new Error('Preview accessibility lab score < 0.90');
+          if(scores.bestPractices < .90) throw new Error('Preview best-practices score < 0.90');
+          NODE
+
+      - name: Lighthouse evidence - root
+        run: |
+          npx lighthouse "$ROOT_URL" --quiet --chrome-flags='--headless --no-sandbox' --output=json --output-path=lighthouse-root.json
+          node - <<'NODE'
+          const r=require('./lighthouse-root.json');
+          const s=r.categories;
+          const scores={performance:s.performance.score,accessibility:s.accessibility.score,bestPractices:s['best-practices'].score,seo:s.seo.score};
+          console.log('root',scores);
+          if(scores.performance < .80) throw new Error('Root performance lab score < 0.80');
+          if(scores.accessibility < .90) throw new Error('Root accessibility lab score < 0.90');
+          if(scores.bestPractices < .90) throw new Error('Root best-practices score < 0.90');
           NODE
 
       - name: WCAG automated evidence
+        shell: bash
         run: |
-          npx pa11y "$PREVIEW_URL" --standard WCAG2AA --reporter json > pa11y.json
+          set -euo pipefail
+          npx pa11y "$PREVIEW_URL" --standard WCAG2AA --reporter json > pa11y-preview.json
+          : > pa11y-governance.ndjson
+          for page in privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html; do
+            npx pa11y "$ROOT_URL$page" --standard WCAG2AA --reporter json >> pa11y-governance.ndjson
+            printf '\n' >> pa11y-governance.ndjson
+          done
 
       - name: Upload browser audit evidence
         if: always()
@@ -139,25 +199,27 @@ jobs:
         with:
           name: enterprise-browser-audit-evidence
           path: |
-            lighthouse.json
-            pa11y.json
+            lighthouse-preview.json
+            lighthouse-root.json
+            pa11y-preview.json
+            pa11y-governance.ndjson
           if-no-files-found: warn
 
   dast-baseline:
-    name: OWASP ZAP DAST baseline
+    name: OWASP ZAP DAST baseline evidence
     runs-on: ubuntu-latest
     needs: static-integrity
     continue-on-error: true
     steps:
-      - name: Wait for public preview
+      - name: Wait for public root
         run: |
-          for i in {1..18}; do curl -fsS "$PREVIEW_URL" >/dev/null && exit 0; sleep 10; done; exit 1
+          for i in {1..24}; do curl -fsS "$ROOT_URL" >/dev/null && exit 0; sleep 10; done; exit 1
       - name: ZAP baseline scan
         run: |
           mkdir -p zap-out
           chmod 777 zap-out
           docker run --rm -v "$PWD/zap-out:/zap/wrk/:rw" -t ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py -t "$PREVIEW_URL" -I -J zap.json -r zap.html
+            zap-baseline.py -t "$ROOT_URL" -I -J zap.json -r zap.html
       - name: Upload DAST evidence
         if: always()
         uses: actions/upload-artifact@v4
