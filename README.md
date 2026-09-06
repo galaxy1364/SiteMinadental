@@ -33,7 +33,7 @@
 - Audit Center: `#/audit`
 - Visual QA: `#/qa`
 
-**Truth:** Root هنوز Runtime قدیمی `2026.08.05.1` است. V9/Enterprise runtime تا زمان deploy واقعی، Domain verification و backend evidence نباید Live/Production 10/10 نامیده شود.
+**Truth:** Root public هنوز تا زمان عبور کامل clean-source audit، domain verification و backend evidence نباید Live/Production 10/10 نامیده شود.
 
 ## 4) Single Public Truth Source
 
@@ -48,7 +48,7 @@
 - booking / OTP / payments / operational forms
 - production-domain verification
 
-`config.js` Secret ندارد، روی Root قبل از Runtime لود می‌شود و Service Worker آن را cache نمی‌کند تا تغییر Owner Truth قدیمی نماند.
+`config.js` Secret ندارد و Service Worker نباید آن را cache کند تا تغییر Owner Truth قدیمی نماند.
 
 ## 5) Design / UX Lock
 
@@ -125,20 +125,8 @@
 ### Enterprise Security workflow
 سه حقیقت جدا دارد:
 1. **Current root hardening evidence** — باید PASS شود.
-2. **V9 production integrity gate** — تا V9 واقعاً روی Root نیست عمداً FAIL می‌ماند.
+2. **Production integrity gate** — تا clean-source production runtime و domain/provider evidence کامل نیست عمداً FAIL می‌ماند.
 3. **CodeQL JavaScript analysis** — مستقل اجرا می‌شود.
-
-Current Root Hardening checks:
-- `config.js`, `path-fix.js`, `site-hardening.js`, `governance-links.js`, `pwa-runtime.js`, `sw.js` syntax
-- owner-truth gates
-- نبود owner data تأییدنشده در root metadata/config/manifest
-- runtime Truth Guard presence
-- config no-cache
-- privacy-safe PWA state preservation
-- sensitive `api/portal/admin` cache exclusion
-- وجود و discoverability واقعی `privacy.html` و `accessibility.html`
-- حضور Governance routes در Sitemap
-- جلوگیری از ورود phone/email/geo/social تأییدنشده به Governance pages
 
 ### Global Enterprise Audit
 هدف:
@@ -209,59 +197,28 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 7. Success عملیاتی بدون server/backend evidence ممنوع است.
 8. `config.js` مرجع واحد Owner Truth عمومی است؛ Secret هرگز وارد آن نمی‌شود.
 
-## 14) Current Hardening Log — 2026-09-03
+## 14) Historical Hardening Summary
 
 ### DONE — Root / Truth / Privacy
-- README از فایل حداقلی به **MASTER GOVERNANCE / TRUTH LOCK** ارتقا یافت.
-- Root `index.html` بدون تغییر React visual bundle، metadata/JSON-LD را از آدرس دقیق، ساعت، مختصات، تلفن، ایمیل، Social، price/payment و claimهای تأییدنشده پاک کرد.
-- `manifest.webmanifest` از `/SiteMinadental/` hard-code به URLهای relative تبدیل و shortcut عملیاتی رزرو حذف شد.
-- `path-fix.js` base را از Script URL مشتق می‌کند؛ custom domain دیگر به `/SiteMinadental` قفل نیست.
-- `pwa-runtime.js` base پویا دارد؛ ذخیره ضمنی همه فرم‌ها حذف شد و فقط `data-pwa-preserve="true"` opt-in قابل نگهداری است.
-- Install Prompt خودکار حذف و به `window.MinaPWA` user-driven تبدیل شد.
-- `sw.js` base پویا گرفت؛ `api/`, `portal/`, `admin/`, `admin.html`, `version.json`, `sw.js`, `config.js` cache نمی‌شوند.
-- فرم‌های appointment/contact دیگر به WhatsApp hard-coded اطلاعات ارسال نمی‌کنند؛ UI validation باقی مانده ولی صریح می‌گوید هیچ نوبت/پیامی ثبت یا ارسال نشده است.
-- Truth Guard روی UI واقعی اضافه شد:
-  - phone/email/address/hours legacy به حالت owner-gated تبدیل می‌شوند
-  - WhatsApp/Telegram/Instagram/email/phone قدیمی غیرفعال می‌شوند
-  - Map iframe/buttons تا تأیید Map Pin gate می‌شوند
-  - stats ساختگی، Before/After بدون consent و Testimonials نمونه با Evidence-gated replacement جایگزین می‌شوند
-  - claimهای مدرک/تجهیزات/ضمانت/بیمه/اقساط/rank/24h/نتیجه قطعی sanitize می‌شوند
-- `config.js` به‌عنوان Single Public Truth Source ساخته و روی Root قبل از runtime لود شد.
-- `config.js` runtime flags دارد: forms/booking/OTP/payments/domain verification = false.
+- Root legacy metadata از آدرس دقیق، ساعت، مختصات، تلفن، ایمیل، Social، price/payment و claimهای تأییدنشده پاک شد.
+- PWA/SW privacy hardening انجام شد و `api/`, `portal/`, `admin/`, `version.json`, `sw.js`, `config.js` از cache حساس خارج شدند.
+- فرم‌های قدیمی hard-coded به WhatsApp مسدود شدند.
+- Truth Guard برای containment legacy ایجاد شد.
+- `config.js` به‌عنوان Single Public Truth Source ایجاد شد.
 
 ### DONE — CI Evidence
-- CodeQL برای Commit Truth Guard `c275e6df44629dc3a41fd91b73348ab211952311` با Success تمام شد.
-- Enterprise Security workflow به دو Gate جدا تفکیک شد: Current Root Hardening و V9 Production Gate.
-- Run `33819217461`: JavaScript syntax = PASS، Owner-Truth contract = PASS، Privacy/PWA contract = PASS.
-- V9 Production Gate در همان Run باید تا زمان مهاجرت واقعی FAIL باقی بماند؛ این Failure Regression محسوب نمی‌شود.
+- CodeQL و Current Root Hardening در چندین commit PASS شده‌اند.
+- Enterprise Security workflow بین current-root و production-gate تفکیک شده است.
+- Global Enterprise Audit شامل HTML validation، browser smoke، Lighthouse، WCAG و ZAP است.
 
 ### IMPORTANT CONTAINMENT TRUTH
-- Minified legacy React bundle `assets/index-ClUC_4GS.js` هنوز رشته‌های قدیمی/تأییدنشده را در **Source** دارد.
-- Truth Guard آن‌ها را در UI فعلی مهار می‌کند، اما این وضعیت راه‌حل نهایی معماری نیست.
-- گام نهایی باید Build تمیز و یکپارچه با Visual DNA فعلی + R3 + Enterprise/V9 باشد تا claimهای legacy از Source نیز حذف شوند؛ Patch runtime نباید برای همیشه معماری نهایی بماند.
-
-### EVIDENCE / COMMITS
-- Master Governance: `67fd5f85fdb2337ec6c76fad959b6273e246ef1d`
-- Root truth metadata: `0c4b89cec39d96d27118842a090706763a5598dc`
-- Manifest portable/truth-safe: `889c37f69df3611455410a0c44d91b08f22bf7ec`
-- PWA privacy/base: `88745f61dbdf37ce4eef1d9897f4af45628350df`
-- SW cache hardening: `5b523bb7bdad4f8177b796925f01f9dfad64a827`
-- Block unverified WhatsApp form forwarding: `877c35061ff772e3d8d10e05c44222eea2c5ed57`
-- Dynamic asset base: `21cda7a8fe863dd2641cba10d8a4498d4dcab419`
-- Runtime Truth Guard: `c275e6df44629dc3a41fd91b73348ab211952311`
-- Root JS syntax pre-gate: `26afbf33d146e398380a9f467fb8ac3b3a93c001`
-- Public Truth Config create: `5a4bff555aa204e6a1f8b83edb744ac8ec92b971`
-- Root loads config: `7e6170c2c6c545939827ce8598ff8481cccf7136`
-- SW config no-cache: `b39201cbd8193e4028954b90178302643aa9559c`
-- CI current-root/V9 split: `36cc64aea8a1e7de7ca43c976cb300acd9149a05`
-- CI truth-gate rule fix: `82987b14e7f250b77b96615f3eb8ae7722504d5c`
-- Root truth contract marker: `196f1f06386f71959b374af3a9cee71471f9595d`
-- Config runtime gate state: `10ef92df16e17f425080190574cf500a26f14b5c`
+- Minified legacy React bundle `assets/index-ClUC_4GS.js` هنوز رشته‌های قدیمی/تأییدنشده را در Source دارد.
+- Truth Guard آن‌ها را در UI legacy مهار می‌کند، اما معماری نهایی باید clean-source باشد و Root دیگر به آن bundle وابسته نماند.
 
 ## 15) Immediate Priority Queue
 
 1. ✅ Root containment hardening + canonical Owner Truth Config + independent CI evidence
-2. 🟡 Clean-source integration: preserve current Premium Visual DNA, merge R3 + Enterprise/V9, remove legacy claims from source (no regression)
+2. 🟡 Clean-source integration: preserve current Premium Visual DNA, merge R3 + Enterprise/V9, remove legacy claims from active source (no regression)
 3. 🟡 Complete Global Enterprise Audit browser/Lighthouse/WCAG/ZAP evidence
 4. ⬜ remove staging remnants only after dependency audit
 5. ⬜ verify/connect existing Cloudflare Production project + `minadentalclinic.ir`
@@ -273,35 +230,73 @@ Lovable Workspace/Project متصل است اما workspace credit ندارد و 
 
 ## 16) NOT CLAIMED
 
-- V9/Enterprise runtime is **not** claimed live on Production.
+- Clean-source runtime is **not** claimed Production-ready until CI and production gates pass.
 - `minadentalclinic.ir` is **not** claimed verified until direct Cloudflare/domain evidence exists.
 - Booking/OTP/Payment/Portal backend are **not** claimed operational.
 - WCAG human/device PASS, field CWV PASS, backup/restore PASS and pentest PASS are **not** claimed.
+- رتبه ۱ یا Top 3 در Google/AI Search **تضمین نمی‌شود**؛ فقط technical SEO, structured data truthfulness, crawlability, performance و people-first content به‌صورت measurable اجرا می‌شوند.
 
 ## 17) Recovery + Governance Log — 2026-09-06
 
 ### 🔴 V9 HISTORICAL RECOVERY — BLOCKED WITH EVIDENCE
-- `.v9latest` current 12-part payload is truncated: assembled Base64 decodes to an incomplete XZ and `xz -t` fails with `Unexpected end of input`.
-- Historical direct `.v9stage/runtime.tar.xz` snapshots were audited. Two archive snapshots were found and both fail `xz -t`; neither is a trustworthy runtime source.
-- Git history was scanned for direct Root snapshots containing V9 identity; no historical Root tree reproduced all 69 authoritative file hashes.
-- A forensic workflow then audited coherent historical snapshots independently for `.v9verified`, `.v9latest`, `.v9xz`, `.v9b64`, `.v9payload`, `exact-payload` and `.payload`.
-- No cross-generation stitching was used. Each snapshot was tried independently as raw/Base64 and XZ/TAR or ZIP, and could only pass if it reproduced **all 69 per-file SHA256 hashes** from `.v9latest/V9_RUNTIME_SHA256SUMS.txt`.
-- Result: no historical tree/archive/chunk snapshot reproduced the authoritative 69-file manifest. Therefore V9 apply remains blocked and was not triggered.
-- Forensic recovery workflow commit: `a8fadbe23da7c3fa41afcc2ec676db15d67e3389`; run `34019587860`; recovery job failed as designed and apply job was skipped.
-- File Library contains `minadentalclinic-v9-visual-preview.html` and `OWNER_INPUTS_V9.md`, but no exact 69-file V9 archive was found. The visual preview contains unverified phone/geo/social/operational claims and is capability/UX reference only, not deployable Production truth.
+- `.v9latest` current 12-part payload truncated است و exact 69-file runtime بازیابی نشده است.
+- Historical snapshots مستقل بررسی شدند و هیچ snapshot معتبری همه 69 hash authoritative را بازتولید نکرد.
+- cross-generation stitching ممنوع و انجام نشده است.
+- historical V9 payload/manifest/staging remnants برای forensic evidence نگه داشته می‌شوند و تا dependency/recovery closure حذف نمی‌شوند.
+- `minadentalclinic-v9-visual-preview.html` فقط capability/UX reference است و به دلیل owner/provider claims تأییدنشده deployable Production truth نیست.
 
 ### ✅ ROOT GOVERNANCE CAPABILITY — IMPLEMENTED
-- `privacy.html` added as a truthful public Privacy Center without invented contact details or unsupported compliance claims. Commit: `b9ce3eda1e55536e39d597422fdc4a1232e3c38f`.
-- `accessibility.html` added with WCAG 2.2 AA as a target, explicitly separating automated checks from still-required VoiceOver/TalkBack/keyboard/200–400% zoom/device testing. Commit: `0ea353095e301f7df1b691a655bd603cba6543f0`.
-- `governance-links.js` exposes both pages from the real public Root without editing the minified React bundle. Initial commit: `fd021acb299486c61ccb8654137f9f6b06bab3d2`; contract marker commit: `a2219530e6c97e24c1c0b7469863f43fc82724b2`.
-- Root `index.html` loads the Governance module. Commit: `380e869ac3bea17ae729d6570e2d89347b6e32e0`.
-- `sitemap.xml` now lists Home, Privacy and Accessibility on the currently verified GitHub Pages origin. Commit: `1b8a2f5e30ba3f20cb267266ef429666f4d177e6`.
-- Enterprise CI now checks Governance JS syntax, page existence, `lang=fa dir=rtl`, main landmarks, Root discoverability, Sitemap entries and owner-data leak patterns. CI contract commit: `4997750268743528081c65c61aa415323a5367e2`.
+- `privacy.html`, `accessibility.html`, `status.html`, `ai-transparency.html`, `editorial-governance.html` به‌عنوان truthful public governance surfaces موجودند.
+- CI syntax/truth/accessibility/link contracts برای این سطوح برقرار است.
 
-### NEXT SAFE GAP
-- Continue adding real owner-independent capabilities to current Root while clean-source recovery/reconstruction is solved separately.
-- Do not delete V9 staging remnants until dependency/recovery audit is explicitly closed and rollback evidence is retained.
-- Next candidate after Governance verification: truthful public Status surface and operational-capability matrix, then AI transparency/medical editorial governance.
+## 18) CLEAN-SOURCE RECONSTRUCTION — ACTIVE (2026-09-06)
+
+### Owner authorization
+مالک دستور صریح برای تکمیل صفر تا صد سایت، اجرای واقعی، افزودن امکانات لازم، جست‌وجوی استانداردهای روز و تست واقعی داده است. این مجوز فقط برای **in-place reconstruction در همین Repo/Branch** تفسیر می‌شود؛ ساخت Repo/سایت موازی، جعل Provider یا روشن‌کردن capability بدون evidence همچنان ممنوع است.
+
+### Rollback point
+- Pre-reconstruction HEAD: `71134a9c0a092b114d7b1adf39e1cd2b08d8a379`
+- Pre-reconstruction tree: `b89b2a401fa99aa8f54d55060dd4c415c8a70876`
+- Force update ممنوع؛ هر commit باید fast-forward و traceable باشد.
+
+### Local reconstruction evidence before first write
+- 30 HTML pages generated in clean-source working tree.
+- JavaScript syntax: PASS.
+- HTML structure (`lang=fa`, `dir=rtl`, `main`, exactly one `h1`, meta description): PASS on all generated pages.
+- XML parse (`sitemap.xml`, `feed.xml`, `opensearch.xml`): PASS.
+- JSON parse (`manifest.webmanifest`, `version.json`): PASS.
+- internal-link audit: initially found one wrong portal path; fixed; retest PASS with 0 unresolved generated/known-root links.
+- local Chromium execution in current container is `NOT_MEASURED_YET` because the container Chromium process hangs on D-Bus/mojo; browser truth must therefore come from existing GitHub Actions Playwright/Lighthouse/Pa11y gate after publish, not be claimed locally.
+
+### First clean-source commit
+- Commit `0edb41558145f50768672fa7c7d6ecd246c40508` creates tested clean-source public assets and conservative Cloudflare edge truth contracts without switching Root yet.
+- Added `assets/css/site.css` with premium RTL/mobile-first design, focus/reduced-motion/contrast/print handling and reserved hero dimensions to reduce CLS.
+- Added `assets/js/site.js` with Persian-normalized search, accessible menu/dialog behavior, owner-gated state hooks and portable GitHub Pages/custom-domain base resolution.
+- Added `_worker.js` with real `/api/health` and `/api/capabilities` truth responses; all unconfigured `/api/*` operations return `503 CAPABILITY_NOT_CONFIGURED` instead of fake success.
+- Added `_headers`/`_redirects`, `.well-known/security.txt`, truthful offline/404 surfaces, `llms.txt`, `humans.txt`, `opensearch.xml`.
+- HSTS/CSP in `_headers` are Cloudflare-deployment controls only; Cloudflare Production deploy remains blocked until HTTPS/domain verification. `style-src 'unsafe-inline'` is currently required by generated static page style attributes and must be removed before final ASVS/CSP hardening if inline styles are eliminated.
+
+### Standards evidence used for reconstruction
+- Google Search 2026: no special AEO/GEO markup/file is required for AI Overviews/AI Mode; foundational SEO, crawlability, textual content, useful original content, valid structured data, Search Console and Business Profile remain the supported path.
+- Google explicitly states ranking/indexing/AI inclusion is not guaranteed even when best practices are followed.
+- Core Web Vitals target remains p75 LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1.
+- WCAG 2.2 AA remains target; new 2.2 requirements such as Focus Not Obscured, Target Size Minimum and Accessible Authentication are applicable.
+- OWASP ASVS stable baseline is 5.0.0.
+- Turnstile requires server-side token validation; client-only CAPTCHA success is not accepted.
+
+### Current execution state
+- **DONE:** read-only source audit, truth/config audit, V9 recovery audit, latest CI audit, Supabase project discovery read-only, standards refresh, clean-source local generation/syntax/structure/link tests, first additive clean-source asset commit.
+- **NOT YET VERIFIED:** fast-forward publication of first clean-source commit, Root switch, GitHub Pages exact-snapshot evidence, updated CI contracts, real browser Lighthouse/WCAG/ZAP on clean Root.
+- **BLOCKED EXTERNAL:** custom production domain/Cloudflare secret evidence, dedicated public-site backend ownership decision, real OTP/SMS provider, Turnstile keys, PSP/payment provider, Search Console/Business Profile ownership, VAPID/push provider, live AI provider, owner-verified clinic details/media/claims, real-device/field tests, independent pentest.
+
+### Forbidden now
+- Do not connect the existing `minadent-production` Supabase clinical-management database to the public website merely because it is active; evidence does not establish it as the public-site backend and it contains sensitive clinic/patient-domain tables.
+- Do not flip `config.js` operational flags to true without end-to-end provider evidence.
+- Do not modify or delete historical `.v9*`, `.payload`, `exact-payload` forensic remnants before dependency/recovery closure.
+- Do not claim Production 10/10 or Google Top 1/Top 3.
+
+### Resume point
+`CLEAN_SOURCE_PHASE_A_COMMIT_CREATED_AWAITING_FAST_FORWARD_REF_AND_CI`
 
 ---
 
