@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0d9488">
+  <meta name="robots" content="index,follow">
+  <meta name="description" content="وضعیت واقعی قابلیت‌ها و آمادگی عملیاتی وب‌سایت دندانپزشکی دکتر مینا مازندرانی؛ تفکیک قابلیت‌های فعال، در انتظار تأیید و نیازمند زیرساخت واقعی.">
+  <link rel="canonical" href="https://galaxy1364.github.io/SiteMinadental/status.html">
+  <link rel="stylesheet" href="./governance.css">
+  <script src="./config.js"></script>
+  <script src="./status-runtime.js" defer></script>
+  <title>وضعیت سیستم | دندانپزشکی دکتر مینا مازندرانی</title>
+</head>
+<body data-theme="status">
+<a class="skip" href="#main">پرش به محتوای اصلی</a>
+<header class="top"><div class="wrap brand"><strong>دندانپزشکی دکتر مینا مازندرانی</strong><a class="back" href="./">بازگشت به سایت</a></div></header>
+<main id="main" class="wrap" data-status-root>
+  <section class="hero" aria-labelledby="status-title">
+    <span class="eyebrow">System Status & Truth Matrix</span>
+    <h1 id="status-title">وضعیت واقعی؛ بدون چراغ سبز نمایشی</h1>
+    <p class="lead">این صفحه بین «کد موجود»، «قابلیت متصل و آزموده‌شده»، «اطلاعات تأییدشده مالک» و «Production evidence» تفاوت می‌گذارد. وجود UI یا کد به‌تنهایی به معنی عملیاتی بودن سرویس نیست.</p>
+    <div class="status-box" role="status"><strong>منبع وضعیت:</strong> <span data-config-source>در حال خواندن MINA_PUBLIC_CONFIG</span>. آخرین تاریخ ثبت‌شده در Config: <span data-config-updated>—</span>.</div>
+    <p class="meta">هدف دامنه Production: <span data-production-target>—</span></p>
+  </section>
+
+  <section class="card" aria-labelledby="runtime-title">
+    <h2 id="runtime-title">Runtime / Operational Readiness</h2>
+    <div class="matrix">
+      <div class="matrix-row"><strong>فرم‌های عملیاتی</strong><span data-runtime-flag="operationalFormsConnected" class="tag info">در حال بررسی</span><span>ثبت واقعی فقط پس از Backend، validation سرور، anti-abuse و Evidence رفت‌وبرگشت مجاز است.</span></div>
+      <div class="matrix-row"><strong>رزرو واقعی</strong><span data-runtime-flag="bookingConnected" class="tag info">در حال بررسی</span><span>ظرفیت، collision prevention، reschedule/cancel و confirmation باید server-side آزموده شوند.</span></div>
+      <div class="matrix-row"><strong>OTP / احراز هویت</strong><span data-runtime-flag="otpConnected" class="tag info">در حال بررسی</span><span>Provider، rate limiting، recovery، abuse controls و AAL مناسب باید واقعی باشند.</span></div>
+      <div class="matrix-row"><strong>پرداخت</strong><span data-runtime-flag="paymentsConnected" class="tag info">در حال بررسی</span><span>موفقیت فقط با callback سرور، amount lock، idempotency و reconciliation معتبر است.</span></div>
+      <div class="matrix-row"><strong>دامنه Production</strong><span data-runtime-flag="productionDomainVerified" class="tag info">در حال بررسی</span><span>DNS/Cloudflare/headers و smoke test مستقیم دامنه باید Evidence داشته باشند.</span></div>
+    </div>
+  </section>
+
+  <div class="grid cols-2">
+    <section class="card" aria-labelledby="owner-title"><h2 id="owner-title">Owner Truth Gates</h2><div class="matrix">
+      <div class="matrix-row"><strong>نشانی دقیق</strong><span data-verification-flag="exactAddress" class="tag info">—</span><span>بدون حدس یا geocoding ساختگی.</span></div>
+      <div class="matrix-row"><strong>Map Pin</strong><span data-verification-flag="mapPin" class="tag info">—</span><span>Google/Neshan/Balad فقط پس از Pin واقعی.</span></div>
+      <div class="matrix-row"><strong>ساعات کاری</strong><span data-verification-flag="hours" class="tag info">—</span><span>در UI و structured data فقط پس از تأیید.</span></div>
+      <div class="matrix-row"><strong>تلفن / ایمیل</strong><span data-verification-flag="phone" class="tag info">—</span><span>کانال عمومی تأییدنشده منتشر نمی‌شود.</span></div>
+      <div class="matrix-row"><strong>مدارک / تجهیزات</strong><span data-verification-flag="credentials" class="tag info">—</span><span>Claim پزشکی باید سند و reviewer داشته باشد.</span></div>
+      <div class="matrix-row"><strong>Reviews</strong><span data-verification-flag="reviews" class="tag info">—</span><span>نظر ساختگی یا بدون provenance ممنوع.</span></div>
+      <div class="matrix-row"><strong>Before / After</strong><span data-verification-flag="beforeAfterConsent" class="tag info">—</span><span>فقط با فایل واقعی و consent قابل اثبات.</span></div>
+    </div></section>
+
+    <section class="card pending" aria-labelledby="evidence-title"><h2 id="evidence-title">Evidenceهایی که هنوز جایگزین‌پذیر نیستند</h2><ul><li>VoiceOver / TalkBack / keyboard / zoom و تست واقعی دستگاه.</li><li>Core Web Vitals میدانی در صدک ۷۵ روی موبایل و دسکتاپ.</li><li>Cloudflare production headers/WAF/rate limiting و domain smoke test.</li><li>Backup/restore drill با RPO/RTO واقعی.</li><li>DAST و pentest مستقل روی محیط Production-like.</li><li>OTP، پرداخت و notification provider واقعی.</li></ul></section>
+  </div>
+
+  <section class="card info" aria-labelledby="definitions-title"><h2 id="definitions-title">تعریف وضعیت‌ها</h2><dl><dt>فعال و تأییدشده</dt><dd>قابلیت واقعاً متصل شده و Evidence مرتبط موجود است.</dd><dt>در انتظار تأیید مالک</dt><dd>داده یا Claim عمومی هنوز به‌صورت مستند تأیید نشده است.</dd><dt>غیرفعال / نیازمند Evidence</dt><dd>ممکن است UI یا کد وجود داشته باشد، اما مسیر عملیاتی کامل و آزموده‌شده نیست.</dd></dl></section>
+
+  <div class="links"><a class="pill-link" href="./privacy.html">حریم خصوصی</a><a class="pill-link" href="./accessibility.html">دسترس‌پذیری</a><a class="pill-link" href="./ai-transparency.html">شفافیت AI</a><a class="pill-link" href="./editorial-governance.html">حاکمیت محتوای پزشکی</a></div>
+</main>
+<footer><div class="wrap">این صفحه uptime monitor نیست و Availability را جعل نمی‌کند؛ هدف آن نمایش آمادگی واقعی قابلیت‌ها و Gateهای Evidence است.</div></footer>
+</body>
+</html>
