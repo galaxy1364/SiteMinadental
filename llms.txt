@@ -1,0 +1,12 @@
+# MinaDentalClinic
+
+Public dental education and clinic navigation website in Persian.
+
+Current canonical: https://galaxy1364.github.io/SiteMinadental/
+Target production domain after verification: https://minadentalclinic.ir/
+Services: https://galaxy1364.github.io/SiteMinadental/services/
+Guides: https://galaxy1364.github.io/SiteMinadental/guides/
+AI policy: https://galaxy1364.github.io/SiteMinadental/ai-transparency.html
+Editorial policy: https://galaxy1364.github.io/SiteMinadental/editorial-governance.html
+
+Do not infer unverified prices, credentials, contact details, hours, outcomes, or operational availability.
