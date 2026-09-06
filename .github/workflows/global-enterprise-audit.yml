@@ -120,7 +120,7 @@ jobs:
       - name: Route smoke test in real Chromium
         shell: bash
         run: |
-          cat > /tmp/route-audit.cjs <<'NODE'
+          cat > route-audit.cjs <<'NODE'
           const { chromium } = require('playwright');
           const previewRoutes=['/','/services','/services/implant','/services/laminate-composite','/services/root-canal','/services/oral-surgery','/services/pediatric','/services/bleaching','/services/prosthodontics','/experience','/experience/online-consultation','/experience/cost-estimate','/experience/patient-journey','/portal','/tools/treatment-comparison','/safety/dental-emergency','/ai-info','/status','/privacy','/accessibility','/guides','/qa','/audit'];
           const rootPages=['','privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html'];
@@ -154,7 +154,7 @@ jobs:
             console.log('Browser route audit PASS');
           })();
           NODE
-          node /tmp/route-audit.cjs
+          node route-audit.cjs
 
       - name: Lighthouse evidence - preview
         run: |
