@@ -55,13 +55,21 @@ const summary = {
     minimumPerformance: Math.min(...results.map(r => r.performance)),
     minimumAccessibility: Math.min(...results.map(r => r.accessibility)),
     minimumBestPractices: Math.min(...results.map(r => r.bestPractices)),
-    medianSeo: median(results.map(r => r.seo))
+    medianSeo: median(results.map(r => r.seo)),
+    medianLcpMs: median(results.map(r => r.lcpMs).filter(Number.isFinite)),
+    maximumCls: Math.max(...results.map(r => r.cls).filter(Number.isFinite)),
+    medianTbtMs: median(results.map(r => r.tbtMs).filter(Number.isFinite))
   },
   thresholds: {
     medianPerformance: 0.80,
     severeRunFloor: 0.65,
-    minimumAccessibility: 0.90,
+    minimumAccessibility: 1.00,
     minimumBestPractices: 0.90
+  },
+  webVitalsTargets: {
+    lcpMs: 2500,
+    cls: 0.10,
+    note: 'Reported as lab targets here; field Core Web Vitals still require real-user p75 evidence.'
   }
 };
 
