@@ -1,4 +1,4 @@
-# audit-schema: 1.6
+# audit-schema: 1.7
 name: Global Enterprise Audit
 
 on:
@@ -98,18 +98,33 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
-      - name: Wait for GitHub Pages deployment
+      - name: Wait for exact GitHub Pages snapshot
         shell: bash
         run: |
           set -euo pipefail
-          for i in {1..24}; do
-            root_ok=0; preview_ok=0
-            curl -fsSL "$ROOT_URL/status.html" | grep -q 'status-runtime.js' && root_ok=1 || true
-            curl -fsSL "$PREVIEW_URL" | grep -q 'preview-d.js' && preview_ok=1 || true
-            if [ "$root_ok" -eq 1 ] && [ "$preview_ok" -eq 1 ]; then exit 0; fi
+          for i in {1..30}; do
+            rm -f /tmp/mina-remote-index.html /tmp/mina-remote-status.html /tmp/mina-remote-preview.html /tmp/mina-remote-governance.css
+            ok=1
+            curl -fsSL -o /tmp/mina-remote-index.html "${ROOT_URL}?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -o /tmp/mina-remote-status.html "${ROOT_URL}status.html?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -o /tmp/mina-remote-preview.html "${PREVIEW_URL}?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -o /tmp/mina-remote-governance.css "${ROOT_URL}governance.css?audit=${GITHUB_SHA}" || ok=0
+            if [ "$ok" -eq 1 ] \
+              && cmp -s index.html /tmp/mina-remote-index.html \
+              && cmp -s status.html /tmp/mina-remote-status.html \
+              && cmp -s preview-r2/index.html /tmp/mina-remote-preview.html \
+              && cmp -s governance.css /tmp/mina-remote-governance.css; then
+              echo "Exact Pages snapshot verified for ${GITHUB_SHA}"
+              exit 0
+            fi
             sleep 10
           done
-          echo 'GitHub Pages did not become current in time.' >&2
+          echo "GitHub Pages did not publish the exact audited snapshot ${GITHUB_SHA} in time." >&2
+          echo 'Local / remote SHA256 evidence:' >&2
+          sha256sum index.html status.html preview-r2/index.html governance.css >&2
+          for f in /tmp/mina-remote-index.html /tmp/mina-remote-status.html /tmp/mina-remote-preview.html /tmp/mina-remote-governance.css; do
+            [ -f "$f" ] && sha256sum "$f" >&2 || true
+          done
           exit 1
 
       - name: Install browser audit tools
