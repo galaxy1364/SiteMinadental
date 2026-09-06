@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          current=(config.js path-fix.js site-hardening.js pwa-runtime.js sw.js)
+          current=(config.js path-fix.js site-hardening.js governance-links.js pwa-runtime.js sw.js)
           for file in "${current[@]}"; do
             test -f "$file"
             node --check "$file"
@@ -83,6 +83,29 @@ jobs:
           grep -q "path('admin/')" sw.js
           grep -q "cache: 'no-store'" sw.js
           echo 'Privacy/PWA contract PASS'
+
+      - name: Governance discovery contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          for page in privacy.html accessibility.html; do
+            test -f "$page"
+            grep -q '<html lang="fa" dir="rtl">' "$page"
+            grep -q '<main ' "$page"
+          done
+
+          grep -q '<script src="./governance-links.js" defer></script>' index.html
+          grep -q 'data-mina-governance-links' governance-links.js
+          grep -q "'./privacy.html'" governance-links.js
+          grep -q "'./accessibility.html'" governance-links.js
+          grep -q 'SiteMinadental/privacy.html' sitemap.xml
+          grep -q 'SiteMinadental/accessibility.html' sitemap.xml
+
+          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.748836|51\.247835|Dr\.mina\.mazandarani|dr_mina_mazandarani' privacy.html accessibility.html; then
+            echo 'Unverified owner/provider data escaped into governance pages.' >&2
+            exit 1
+          fi
+          echo 'Governance discovery contract PASS'
 
   production-gate:
     name: V9 production integrity gate
