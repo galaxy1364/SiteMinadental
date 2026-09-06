@@ -9,6 +9,7 @@
 
     const nav = document.createElement('nav');
     nav.setAttribute('data-mina-governance-links', 'true');
+    nav.setAttribute('data-mina-governance-version', '1');
     nav.setAttribute('aria-label', 'اطلاعات و سیاست‌های سایت');
     nav.style.cssText = [
       'display:flex',
