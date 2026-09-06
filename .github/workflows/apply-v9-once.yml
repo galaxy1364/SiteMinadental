@@ -1,39 +1,45 @@
-name: Apply verified MinaDentalClinic Enterprise V9
+name: Verify and Apply MinaDentalClinic Enterprise V9
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.v9latest/**'
+      - '.github/workflows/apply-v9-once.yml'
   workflow_dispatch:
-
-permissions:
-  contents: write
+    inputs:
+      deploy:
+        description: 'Apply verified V9 runtime to main after all gates pass'
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: minadentalclinic-v9-apply
   cancel-in-progress: false
 
 jobs:
-  verify-and-apply:
+  verify-payload:
+    name: Verify canonical V9 payload
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Checkout staged main
+      - name: Checkout canonical main
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
-      - name: Assemble exact verified runtime
+      - name: Assemble canonical archive
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t parts < <(find .v9verified -maxdepth 1 -type f -name 'part-*.txt' | sort)
-          test "${#parts[@]}" -gt 0
-          : > /tmp/v9-runtime.b64
-          for part in "${parts[@]}"; do
-            test "$(tail -c 1 "$part")" = 'X'
-            head -c -1 "$part" >> /tmp/v9-runtime.b64
-          done
+          mapfile -t parts < <(find .v9latest -maxdepth 1 -type f -name 'part-*.txt' | sort)
+          test "${#parts[@]}" -eq 12
+          cat "${parts[@]}" > /tmp/v9-runtime.b64
           base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz
           xz -t /tmp/v9-runtime.tar.xz
+          echo "archive_sha256=$(sha256sum /tmp/v9-runtime.tar.xz | awk '{print $1}')" >> "$GITHUB_ENV"
 
-      - name: Verify exact V9 runtime content
+      - name: Verify exact 69-file manifest
         shell: bash
         run: |
           set -euo pipefail
@@ -43,30 +49,113 @@ jobs:
           test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
           cd /tmp/v9-site
           sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
-          for file in index.html _worker.js sw.js version.json admin.html portal/index.html assets/css/site.css assets/js/site.js assets/js/admin.js assets/js/portal.js assets/js/status.js status/index.html safety/dental-emergency/index.html tools/treatment-comparison/index.html; do
+          for file in \
+            index.html _worker.js sw.js version.json config.js manifest.webmanifest \
+            admin.html portal/index.html assets/css/site.css assets/js/site.js \
+            assets/js/admin.js assets/js/portal.js assets/js/status.js \
+            status/index.html safety/dental-emergency/index.html \
+            tools/treatment-comparison/index.html robots.txt sitemap.xml _headers; do
             test -f "$file"
           done
           grep -q '2026.08.30.9' version.json
           grep -q 'enterprise-v9' version.json
           grep -q 'https://minadentalclinic.ir/' index.html
-          if grep -R -n -F '2026.08.05.1' .; then exit 1; fi
-          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' .; then exit 1; fi
+          if grep -R -n -F '2026.08.05.1' .; then
+            echo 'Legacy V8 version found in V9 payload.' >&2
+            exit 1
+          fi
+          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' .; then
+            echo 'Legacy GitHub Pages canonical found in V9 payload.' >&2
+            exit 1
+          fi
+
+      - name: Truth and privacy audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/v9-site
+
+          # Owner/provider values remain gated until explicitly verified.
+          if grep -R -n -E \
+            '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|خیابان امیرکبیر|Dr\.mina\.mazandarani|dr_mina_mazandarani' \
+            --include='*.html' --include='*.js' --include='*.json' --include='*.xml' --include='*.txt' .; then
+            echo 'Unverified owner/provider data is embedded in canonical V9 payload.' >&2
+            exit 1
+          fi
+
+          if grep -R -n -E \
+            "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" \
+            --include='*.html' --include='*.js' --include='*.json' .; then
+            echo 'Potential server secret found in public V9 runtime.' >&2
+            exit 1
+          fi
+
+          grep -q 'no-store' _headers
+          grep -q 'Content-Security-Policy:' _headers
+          if grep -q "unsafe-eval\|unsafe-inline" _headers; then
+            echo 'Unsafe CSP directive detected.' >&2
+            exit 1
+          fi
+
+      - name: JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/v9-site
           node --check _worker.js
           node --check sw.js
+          node --check config.js
           node --check assets/js/site.js
           node --check assets/js/admin.js
           node --check assets/js/portal.js
           node --check assets/js/status.js
+          echo "Canonical V9 payload verified. Archive SHA256: $archive_sha256"
 
-      - name: Replace runtime atomically and preserve DevSecOps controls
+  apply-runtime:
+    name: Apply verified V9 runtime
+    needs: verify-payload
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout canonical main
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Reassemble and reverify immediately before apply
         shell: bash
         run: |
           set -euo pipefail
-          find . -mindepth 1 -maxdepth 1 ! -name .git ! -name .github -exec rm -rf {} +
+          mapfile -t parts < <(find .v9latest -maxdepth 1 -type f -name 'part-*.txt' | sort)
+          test "${#parts[@]}" -eq 12
+          cat "${parts[@]}" > /tmp/v9-runtime.b64
+          base64 --decode /tmp/v9-runtime.b64 > /tmp/v9-runtime.tar.xz
+          xz -t /tmp/v9-runtime.tar.xz
+          rm -rf /tmp/v9-site
+          mkdir -p /tmp/v9-site
+          tar -xJf /tmp/v9-runtime.tar.xz -C /tmp/v9-site
+          test "$(find /tmp/v9-site -type f | wc -l)" -eq 69
+          cd /tmp/v9-site
+          sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
+          grep -q '2026.08.30.9' version.json
+          grep -q 'enterprise-v9' version.json
+
+      - name: Replace runtime atomically while preserving governance and DevSecOps
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp README.md /tmp/MASTER_README.md
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git ! -name .github ! -name README.md \
+            -exec rm -rf {} +
           cp -a /tmp/v9-site/. .
+          cp /tmp/MASTER_README.md README.md
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git diff --cached --quiet && { echo 'No production changes.'; exit 0; }
-          git commit -m 'Deploy MinaDentalClinic Enterprise V9 code-hardened'
+          git commit -m 'Deploy verified MinaDentalClinic Enterprise V9 runtime'
           git push origin HEAD:main
