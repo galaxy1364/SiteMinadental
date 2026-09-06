@@ -1,4 +1,4 @@
-# audit-schema: 1.3
+# audit-schema: 1.4
 name: Global Enterprise Audit
 
 on:
@@ -80,8 +80,7 @@ jobs:
 
           governance=['privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html']
           for name in governance:
-              page=Path(name)
-              text=page.read_text('utf-8')
+              text=Path(name).read_text('utf-8')
               if 'Content-Security-Policy' not in text: failures.append(f'{name}: missing strict meta CSP')
               if '<style' in text or ' style=' in text: failures.append(f'{name}: inline style regression')
               if 'href="./governance.css"' not in text: failures.append(f'{name}: missing shared governance stylesheet')
@@ -186,12 +185,45 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx pa11y "$PREVIEW_URL" --standard WCAG2AA --reporter json > pa11y-preview.json
-          : > pa11y-governance.ndjson
-          for page in privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html; do
-            npx pa11y "$ROOT_URL$page" --standard WCAG2AA --reporter json >> pa11y-governance.ndjson
-            printf '\n' >> pa11y-governance.ndjson
-          done
+          cat > pa11y-audit.cjs <<'NODE'
+          const fs = require('fs');
+          const pa11y = require('pa11y');
+          const options = {
+            standard: 'WCAG2AA',
+            runners: ['htmlcs', 'axe'],
+            includeWarnings: false,
+            includeNotices: false,
+            chromeLaunchConfig: {
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            }
+          };
+          const targets = [
+            ['preview', process.env.PREVIEW_URL],
+            ['privacy', process.env.ROOT_URL+'privacy.html'],
+            ['accessibility', process.env.ROOT_URL+'accessibility.html'],
+            ['status', process.env.ROOT_URL+'status.html'],
+            ['ai-transparency', process.env.ROOT_URL+'ai-transparency.html'],
+            ['editorial-governance', process.env.ROOT_URL+'editorial-governance.html']
+          ];
+          (async()=>{
+            const report={generatedAt:new Date().toISOString(), standard:'WCAG2AA', targets:{}};
+            let failures=0;
+            for(const [name,url] of targets){
+              const result=await pa11y(url,options);
+              report.targets[name]=result;
+              console.log(`${name}: ${result.issues.length} WCAG error(s)`);
+              if(result.issues.length){
+                failures+=result.issues.length;
+                for(const issue of result.issues){
+                  console.error(`${name}: ${issue.code} :: ${issue.message} :: ${issue.selector}`);
+                }
+              }
+            }
+            fs.writeFileSync('pa11y-wcag2aa.json',JSON.stringify(report,null,2));
+            if(failures) process.exit(1);
+          })().catch(err=>{console.error(err);process.exit(2)});
+          NODE
+          node pa11y-audit.cjs
 
       - name: Upload browser audit evidence
         if: always()
@@ -201,8 +233,7 @@ jobs:
           path: |
             lighthouse-preview.json
             lighthouse-root.json
-            pa11y-preview.json
-            pa11y-governance.ndjson
+            pa11y-wcag2aa.json
           if-no-files-found: warn
 
   dast-baseline:
