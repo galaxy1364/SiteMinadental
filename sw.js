@@ -1,5 +1,5 @@
 'use strict';
-const VERSION='2026.09.06.2';
+const VERSION='2026.09.06.3';
 const BASE_URL=new URL('./',self.location.href);
 const path=(v='')=>new URL(v,BASE_URL).pathname;
 const STATIC_CACHE=`mina-public-static-${VERSION}`;
