@@ -74,7 +74,7 @@ jobs:
       - name: Install browser audit tools
         run: |
           npm init -y >/dev/null 2>&1
-          npm install --no-save playwright@latest lighthouse@latest pa11y@latest
+          npm install --no-save playwright@latest lighthouse@latest pa11y@latest axe-core@latest
           npx playwright install chromium --with-deps
       - name: Multi-route real Chromium audit
         shell: bash
@@ -85,6 +85,30 @@ jobs:
           (async()=>{const browser=await chromium.launch({headless:true});const failures=[];for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){const page=await browser.newPage({viewport});page.on('pageerror',e=>failures.push(`pageerror ${e.message}`));page.on('console',m=>{if(m.type()==='error')failures.push(`console ${m.text()}`)});for(const route of routes){const join=route.includes('?')?'&':'?';const response=await page.goto(process.env.ROOT_URL+route+join+'audit='+process.env.GITHUB_SHA,{waitUntil:'networkidle'});if(!response||response.status()>=400)failures.push(`${route}: HTTP ${response?.status()}`);const main=page.locator('main'),h1=page.locator('h1');if(await main.count()!==1)failures.push(`${route}: main count`);if(await h1.count()!==1)failures.push(`${route}: h1 count`);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2);if(overflow)failures.push(`${route}: horizontal overflow ${viewport.width}`)}await page.close()}await browser.close();if(failures.length){console.error([...new Set(failures)].join('\n'));process.exit(1)}console.log('Chromium route audit PASS')})().catch(e=>{console.error(e);process.exit(2)});
           NODE
           node route-audit.cjs
+      - name: Raw Axe contrast diagnostics
+        shell: bash
+        run: |
+          cat > axe-diagnostics.cjs <<'NODE'
+          const {chromium}=require('playwright');
+          const axe=require('axe-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:1440,height:1000}});
+            await page.goto(process.env.ROOT_URL+'?axe='+process.env.GITHUB_SHA,{waitUntil:'networkidle'});
+            await page.waitForTimeout(700);
+            await page.addScriptTag({content:axe.source});
+            const result=await page.evaluate(async()=>{
+              const styleSelectors=['.brand-mark','#main-nav a:nth-child(2)','.eyebrow','.hero h1','.hero .lead','.btn.primary','.fact b','.fact span','.section-head h2','.section-head p','.service-mini b','.service-mini small','.clarity-card h2','.clarity-card p','.quick-card h2','.quick-card p'];
+              const computed=styleSelectors.map(selector=>{const el=document.querySelector(selector);if(!el)return{selector,missing:true};const cs=getComputedStyle(el);const parent=el.parentElement?getComputedStyle(el.parentElement):null;return{selector,color:cs.color,background:cs.backgroundColor,backgroundImage:cs.backgroundImage,opacity:cs.opacity,filter:cs.filter,parentBackground:parent?.backgroundColor,parentBackgroundImage:parent?.backgroundImage};});
+              const audit=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
+              const violations=audit.violations.flatMap(v=>v.nodes.slice(0,20).map(n=>({target:n.target,html:n.html,data:n.any?.[0]?.data||n.all?.[0]?.data||null,message:n.any?.[0]?.message||n.all?.[0]?.message||''})));
+              return{computed,violations};
+            });
+            console.log(JSON.stringify(result,null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(2)});
+          NODE
+          node axe-diagnostics.cjs
       - name: Lighthouse multi-run root
         run: node .github/scripts/lighthouse-median.cjs root "$ROOT_URL"
       - name: Lighthouse multi-run services
@@ -95,7 +119,7 @@ jobs:
           cat > pa11y-audit.cjs <<'NODE'
           const pa11y=require('pa11y');
           const targets=['','services/','guides/','experience/','booking/','tools/treatment-comparison/','ai-info/','safety/dental-emergency/','dentist-tehran-22/','contact/'];
-          (async()=>{let n=0;for(const route of targets){const sep=route.includes('?')?'&':'?';const url=process.env.ROOT_URL+route+sep+'wcag='+process.env.GITHUB_SHA;const r=await pa11y(url,{standard:'WCAG2AA',runners:['axe','htmlcs'],includeWarnings:false,includeNotices:false,wait:500,chromeLaunchConfig:{args:['--no-sandbox']}});console.log(route||'root',r.issues.length);for(const i of r.issues)console.error(route,i.code,i.message,i.selector);n+=r.issues.length}if(n)process.exit(1)})().catch(e=>{console.error(e);process.exit(2)});
+          (async()=>{let n=0;for(const route of targets){const sep=route.includes('?')?'&':'?';const url=process.env.ROOT_URL+route+sep+'wcag='+process.env.GITHUB_SHA;const r=await pa11y(url,{standard:'WCAG2AA',runners:['axe','htmlcs'],includeWarnings:false,includeNotices:false,wait:700,chromeLaunchConfig:{args:['--no-sandbox']}});console.log(route||'root',r.issues.length);for(const i of r.issues)console.error(route,i.code,i.message,i.selector);n+=r.issues.length}if(n)process.exit(1)})().catch(e=>{console.error(e);process.exit(2)});
           NODE
           node pa11y-audit.cjs
       - name: Upload browser evidence
