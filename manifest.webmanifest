@@ -1,21 +1,25 @@
 {
   "id": "./",
   "name": "دندانپزشکی دکتر مینا مازندرانی",
-  "short_name": "دکتر مازندرانی",
-  "description": "اطلاعات، خدمات و مسیرهای مراجعه دندانپزشکی دکتر مینا مازندرانی در تهران منطقه ۲۲",
+  "short_name": "Mina Dental",
+  "description": "خدمات، راهنماها و تجربه دیجیتال دندانپزشکی دکتر مینا مازندرانی",
   "lang": "fa",
   "dir": "rtl",
   "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#0d9488",
-  "categories": ["medical", "health", "business"],
+  "display_override": ["window-controls-overlay","standalone","minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f7fffd",
+  "theme_color": "#0b3a3f",
+  "categories": ["medical","health","business"],
   "icons": [
     {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
     {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
     {"src":"./icons/icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ],
+  "shortcuts": [
+    {"name":"خدمات","url":"./services/","icons":[{"src":"./icons/icon-192.png","sizes":"192x192"}]},
+    {"name":"راهنماها","url":"./guides/","icons":[{"src":"./icons/icon-192.png","sizes":"192x192"}]}
   ]
 }

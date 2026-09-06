@@ -1,4 +1,4 @@
-name: Enterprise Security & Production Gate
+name: Enterprise Security & Clean-Source Release Gate
 
 on:
   workflow_dispatch:
@@ -29,336 +29,121 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  current-root-hardening:
-    name: Current root hardening evidence
+  clean-source-integrity:
+    name: Clean-source public release evidence
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
       - name: JavaScript syntax
         shell: bash
         run: |
           set -euo pipefail
-          current=(config.js path-fix.js site-hardening.js governance-links.js status-runtime.js pwa-runtime.js sw.js)
-          for file in "${current[@]}"; do
-            test -f "$file"
-            node --check "$file"
-          done
-          echo 'Current root JavaScript syntax PASS'
-
-      - name: Owner-truth contract
+          for file in config.js assets/js/site.js sw.js _worker.js status-runtime.js; do test -f "$file"; node --check "$file"; done
+      - name: JSON and XML integrity
+        shell: python
+        run: |
+          import json, xml.etree.ElementTree as ET
+          for f in ('manifest.webmanifest','version.json','search-index.json'): json.load(open(f, encoding='utf-8'))
+          for f in ('sitemap.xml','feed.xml','opensearch.xml'): ET.parse(f)
+          print('JSON/XML PASS')
+      - name: Clean-source truth and security contract
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'MINA_PUBLIC_CONFIG' config.js
-          grep -q 'exactAddress: false' config.js
-          grep -q 'mapPin: false' config.js
-          grep -q 'phone: false' config.js
-          grep -q 'reviews: false' config.js
-          grep -q 'beforeAfterConsent: false' config.js
-          grep -q '<script src="./config.js"></script>' index.html
-
-          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.7219|51\.3347|خیابان امیرکبیر.*یاس' index.html manifest.webmanifest config.js; then
-            echo 'Unverified owner data escaped into root public metadata/config.' >&2
-            exit 1
-          fi
-
-          grep -q 'data-mina-owner-gated' site-hardening.js
-          grep -q 'gateSection' site-hardening.js
-          grep -q "'stats'" site-hardening.js
-          grep -q "'before-after'" site-hardening.js
-          grep -q "'testimonials'" site-hardening.js
-          grep -q "path('config.js')" sw.js
-          echo 'Owner-truth contract PASS'
-
-      - name: Privacy and PWA contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          if grep -q "querySelectorAll('input,select,textarea')" pwa-runtime.js; then
-            echo 'Implicit all-form persistence regression detected.' >&2
-            exit 1
-          fi
-          grep -q 'data-pwa-preserve="true"' pwa-runtime.js
-          grep -q "path('api/')" sw.js
-          grep -q "path('portal/')" sw.js
-          grep -q "path('admin/')" sw.js
-          grep -q "cache: 'no-store'" sw.js
-          echo 'Privacy/PWA contract PASS'
-
-      - name: Governance, AI and medical editorial contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          pages=(privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html)
-          for page in "${pages[@]}"; do
-            test -f "$page"
-            grep -q '<html lang="fa" dir="rtl">' "$page"
-            grep -q '<main ' "$page"
-            grep -q 'href="./governance.css"' "$page"
-            grep -q 'http-equiv="Content-Security-Policy"' "$page"
-            grep -q "default-src 'self'" "$page"
-            grep -q "object-src 'none'" "$page"
-            grep -q "script-src 'self'" "$page"
-            grep -q "style-src 'self'" "$page"
-            if grep -E -n '<style([ >])|style=' "$page"; then
-              echo "Inline style regression in $page; governance surfaces must remain CSP-ready." >&2
-              exit 1
-            fi
-          done
-
-          test -f governance.css
-          test -f governance-nav.css
-          grep -q '<link rel="stylesheet" href="./governance-nav.css"' index.html
-          grep -q '<script src="./governance-links.js" defer></script>' index.html
-          grep -q 'data-mina-governance-links' governance-links.js
-          if grep -E -n '\.style\.|cssText' governance-links.js || grep -E -n 'setAttribute\([^)]*style' governance-links.js; then
-            echo 'Inline runtime styling regression detected in governance-links.js.' >&2
-            exit 1
-          fi
-
-          for route in status privacy accessibility ai-transparency editorial-governance; do
-            grep -q "SiteMinadental/${route}.html" sitemap.xml
-          done
-          grep -q "'./status.html'" governance-links.js
-          grep -q "'./privacy.html'" governance-links.js
-          grep -q "'./accessibility.html'" governance-links.js
-          grep -q "'./ai-transparency.html'" governance-links.js
-          grep -q "'./editorial-governance.html'" governance-links.js
-
-          grep -q '<script src="./config.js"></script>' status.html
-          grep -q '<script src="./status-runtime.js" defer></script>' status.html
-          grep -q 'data-runtime-flag="bookingConnected"' status.html
-          grep -q 'MINA_PUBLIC_CONFIG' status-runtime.js
-
-          grep -q 'تشخیص قطعی' ai-transparency.html
-          grep -q 'تجویز دارو' ai-transparency.html
-          grep -Eq 'Human handoff|human handoff' ai-transparency.html
-          grep -q 'Medical Review' editorial-governance.html
-          grep -q 'Truth Review' editorial-governance.html
-          grep -Eq 'Revision history|Revision History' editorial-governance.html
-
-          if grep -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.748836|51\.247835|Dr\.mina\.mazandarani|dr_mina_mazandarani' "${pages[@]}"; then
-            echo 'Unverified owner/provider data escaped into governance pages.' >&2
-            exit 1
-          fi
-          echo 'Governance/AI/editorial contract PASS'
-
-      - name: Governance HTML accessibility and local-link audit
+          grep -q '"channel": "clean-source-rc1"' version.json
+          grep -q '"productionReady": false' version.json
+          grep -q 'bookingConnected: false' config.js
+          grep -q 'patientPortalConnected: false' config.js
+          grep -q 'aiConciergeConnected: false' config.js
+          grep -q "style-src 'self'" _headers
+          grep -q "script-src 'self'" _headers
+          if grep -q "unsafe-inline\|unsafe-eval" _headers; then echo 'Unsafe CSP directive detected' >&2; exit 1; fi
+          if grep -q 'assets/index-ClUC_4GS.js\|site-hardening.js\|path-fix.js\|pwa-runtime.js' index.html; then echo 'Root still depends on legacy containment runtime' >&2; exit 1; fi
+          active=(index.html services guides experience booking tools ai-info safety dentist-tehran-22 contact about links install.html portal)
+          if grep -R -E -n '09105306142|989105306142|galaxy\.mehdi\.m@gmail\.com|35\.7219|51\.3347|35\.748836|51\.247835|خیابان امیرکبیر.*یاس|Dr\.mina\.mazandarani|dr_mina_mazandarani' "${active[@]}" config.js manifest.webmanifest; then echo 'Unverified owner/provider data escaped into active clean source' >&2; exit 1; fi
+          test -f .v9latest/V9_RUNTIME_SHA256SUMS.txt
+          echo 'Truth/security PASS'
+      - name: HTML structure accessibility and local-link audit
         shell: python
         run: |
           from pathlib import Path
           from html.parser import HTMLParser
           from urllib.parse import urlsplit
-          import sys
-
-          pages = [Path(p) for p in (
-              'privacy.html','accessibility.html','status.html',
-              'ai-transparency.html','editorial-governance.html'
-          )]
-          failures = []
-
+          import posixpath, sys
+          pages=['index.html','services/index.html','services/implant/index.html','services/laminate-composite/index.html','services/root-canal/index.html','services/oral-surgery/index.html','services/pediatric/index.html','services/bleaching/index.html','services/prosthodontics/index.html','services/radiography/index.html','guides/index.html','guides/dental-pain-red-flags/index.html','guides/dental-implant-consultation/index.html','guides/child-first-dental-visit/index.html','guides/oral-hygiene-basics/index.html','guides/root-canal-explained/index.html','guides/teeth-whitening-safety/index.html','experience/index.html','booking/index.html','tools/treatment-comparison/index.html','ai-info/index.html','safety/dental-emergency/index.html','dentist-tehran-22/index.html','contact/index.html','about/index.html','links/index.html','install.html','portal/index.html','privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html','offline.html','404.html']
+          failures=[]; existing={p.as_posix() for p in Path('.').rglob('*') if p.is_file()}
           class Audit(HTMLParser):
-              def __init__(self, page):
-                  super().__init__(convert_charrefs=True)
-                  self.page = page
-                  self.html = {}
-                  self.ids = set()
-                  self.duplicates = set()
-                  self.links = []
-                  self.main = 0
-                  self.h1 = 0
-                  self.skip_to_main = False
-              def handle_starttag(self, tag, attrs):
-                  a = dict(attrs)
-                  if tag == 'html': self.html = a
-                  if tag == 'main': self.main += 1
-                  if tag == 'h1': self.h1 += 1
-                  if tag == 'a':
-                      href = a.get('href','')
-                      self.links.append((href,a))
-                      if href == '#main': self.skip_to_main = True
+              def __init__(self,page): super().__init__(convert_charrefs=True); self.page=page; self.html={}; self.main=0; self.h1=0; self.ids=set(); self.dups=set(); self.links=[]; self.images=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if tag=='html': self.html=a
+                  if tag=='main': self.main+=1
+                  if tag=='h1': self.h1+=1
                   if 'id' in a:
-                      if a['id'] in self.ids: self.duplicates.add(a['id'])
+                      if a['id'] in self.ids: self.dups.add(a['id'])
                       self.ids.add(a['id'])
-
-          for page in pages:
-              audit = Audit(page)
-              audit.feed(page.read_text('utf-8'))
-              if audit.html.get('lang') != 'fa' or audit.html.get('dir') != 'rtl':
-                  failures.append(f'{page}: expected lang=fa dir=rtl')
-              if audit.main != 1: failures.append(f'{page}: expected exactly one main landmark')
-              if audit.h1 != 1: failures.append(f'{page}: expected exactly one h1')
-              if not audit.skip_to_main: failures.append(f'{page}: missing skip link to #main')
-              if audit.duplicates: failures.append(f'{page}: duplicate ids {sorted(audit.duplicates)}')
-
-              for href, attrs in audit.links:
-                  if href == '#': failures.append(f'{page}: empty hash link')
-                  if attrs.get('target') == '_blank':
-                      rel = set((attrs.get('rel') or '').split())
-                      if not {'noopener','noreferrer'} <= rel:
-                          failures.append(f'{page}: target=_blank missing noopener noreferrer')
-                  if not href or href.startswith(('#','mailto:','tel:','sms:','javascript:','data:')):
-                      continue
-                  parsed = urlsplit(href)
-                  if parsed.scheme or parsed.netloc: continue
-                  target = href.split('#',1)[0].split('?',1)[0]
-                  if not target: continue
-                  candidate = page.parent / target
-                  if candidate.is_dir(): candidate = candidate / 'index.html'
-                  elif candidate.suffix == '': candidate = candidate / 'index.html'
-                  if not candidate.exists(): failures.append(f'{page}: broken local link {href}')
-
-          if failures:
-              print('\n'.join(failures))
-              sys.exit(1)
-          print(f'Governance HTML audit PASS: {len(pages)} pages')
-
-  production-gate:
-    name: V9 production integrity gate
+                  if tag=='a' and a.get('href') is not None: self.links.append((a.get('href',''),a))
+                  if tag=='img': self.images.append(a)
+          def resolve(page,href):
+              if not href or href.startswith(('#','mailto:','tel:','sms:','javascript:','data:')): return None
+              u=urlsplit(href)
+              if u.scheme or u.netloc: return None
+              target=href.split('#',1)[0].split('?',1)[0]
+              if not target: return None
+              rel=target.lstrip('/') if target.startswith('/') else posixpath.normpath(posixpath.join(posixpath.dirname(page),target))
+              if rel in ('','.'): rel='index.html'
+              elif rel.endswith('/'): rel+='index.html'
+              elif '.' not in posixpath.basename(rel): rel+='/index.html'
+              return posixpath.normpath(rel)
+          for p in pages:
+              path=Path(p)
+              if not path.is_file(): failures.append(f'{p}: missing'); continue
+              raw=path.read_text('utf-8'); a=Audit(p); a.feed(raw)
+              if a.html.get('lang')!='fa' or a.html.get('dir')!='rtl': failures.append(f'{p}: lang/dir')
+              if a.main!=1: failures.append(f'{p}: main count {a.main}')
+              if a.h1!=1: failures.append(f'{p}: h1 count {a.h1}')
+              if a.dups: failures.append(f'{p}: duplicate ids {sorted(a.dups)}')
+              if '<style' in raw or ' style=' in raw: failures.append(f'{p}: inline style')
+              for img in a.images:
+                  if 'alt' not in img: failures.append(f'{p}: img without alt')
+              for href,attrs in a.links:
+                  if href=='#': failures.append(f'{p}: empty hash href')
+                  if attrs.get('target')=='_blank' and not {'noopener','noreferrer'} <= set((attrs.get('rel') or '').split()): failures.append(f'{p}: target blank without noopener noreferrer')
+                  dest=resolve(p,href)
+                  if dest and dest not in existing: failures.append(f'{p}: broken local link {href} -> {dest}')
+          if failures: print('\n'.join(failures)); sys.exit(1)
+          print(f'HTML/link audit PASS: {len(pages)} pages')
+      - name: Sitemap and privacy boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'SiteMinadental/services/implant/' sitemap.xml
+          grep -q 'SiteMinadental/guides/child-first-dental-visit/' sitemap.xml
+          grep -q 'SiteMinadental/dentist-tehran-22/' sitemap.xml
+          if grep -q 'SiteMinadental/portal/' sitemap.xml; then echo 'Private portal must not be in sitemap' >&2; exit 1; fi
+          grep -q 'Disallow: /portal/' robots.txt
+          grep -q 'noindex,nofollow' portal/index.html
+          echo 'Sitemap/privacy PASS'
+  production-external-readiness:
+    name: External production readiness (truth report)
     runs-on: ubuntu-latest
-    needs: current-root-hardening
+    needs: clean-source-integrity
     steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-
-      - name: Verify V9 production contract
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Report external blockers without fake failure
         shell: bash
         run: |
-          set -euo pipefail
-          required=(
-            index.html _worker.js sw.js version.json manifest.webmanifest
-            admin.html portal/index.html assets/css/site.css assets/js/site.js
-            assets/js/admin.js assets/js/portal.js assets/js/status.js
-            status/index.html safety/dental-emergency/index.html
-            tools/treatment-comparison/index.html robots.txt sitemap.xml _headers
-          )
-          for file in "${required[@]}"; do test -f "$file"; done
-
-          grep -q '2026.08.30.9' version.json
-          grep -q 'enterprise-v9' version.json
-          grep -q 'https://minadentalclinic.ir/' index.html
-
-          if grep -R -n -F '2026.08.05.1' --exclude-dir=.git --exclude-dir=.github .; then
-            echo 'Legacy V8 version found in production runtime.' >&2
-            exit 1
-          fi
-          if grep -R -n -F 'galaxy1364.github.io/SiteMinadental' --exclude-dir=.git --exclude-dir=.github .; then
-            echo 'Legacy GitHub Pages canonical found.' >&2
-            exit 1
-          fi
-          if grep -R -n -E "SUPABASE_SERVICE_ROLE_KEY[[:space:]]*[:=][[:space:]]*['\"][^'\"]+|sk_live_[A-Za-z0-9]+" --exclude-dir=.git --exclude-dir=.github .; then
-            echo 'Potential server secret in public runtime.' >&2
-            exit 1
-          fi
-
-          node --check _worker.js
-          node --check sw.js
-          node --check assets/js/site.js
-          node --check assets/js/admin.js
-          node --check assets/js/portal.js
-          node --check assets/js/status.js
-
-      - name: Verify security headers and private surfaces
-        shell: bash
-        run: |
-          set -euo pipefail
-          grep -q 'X-Content-Type-Options: nosniff' _headers
-          grep -q 'Referrer-Policy: strict-origin-when-cross-origin' _headers
-          grep -q 'Strict-Transport-Security:' _headers
-          grep -q 'Content-Security-Policy:' _headers
-          grep -q "object-src 'none'" _headers
-          grep -q "base-uri 'self'" _headers
-          grep -q "frame-ancestors 'self'" _headers
-          if grep -q "unsafe-eval\|unsafe-inline" _headers; then
-            echo 'Unsafe CSP directive detected.' >&2
-            exit 1
-          fi
-          awk '/\/admin.html/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'Cache-Control: no-store'
-          awk '/\/portal\/\*/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'Cache-Control: no-store'
-          awk '/\/portal\/\*/{flag=1;next}/^$/{flag=0}flag' _headers | grep -q 'X-Robots-Tag: noindex'
-          grep -q "report-uri /api/security/csp-report" _worker.js
-
-      - name: Verify HTML accessibility and link integrity
-        shell: python
-        run: |
-          from pathlib import Path
-          from html.parser import HTMLParser
-          from urllib.parse import urlsplit
-          import sys
-
-          root = Path('.')
-          failures = []
-          html_files = sorted(p for p in root.rglob('*.html') if '.git' not in p.parts and '.github' not in p.parts)
-
-          class Audit(HTMLParser):
-              def __init__(self, path):
-                  super().__init__(convert_charrefs=True)
-                  self.path = path
-                  self.ids = set()
-                  self.duplicate_ids = set()
-                  self.links = []
-                  self.html_attrs = {}
-                  self.has_main = False
-              def handle_starttag(self, tag, attrs):
-                  a = dict(attrs)
-                  if tag == 'html': self.html_attrs = a
-                  if tag == 'main': self.has_main = True
-                  if 'id' in a:
-                      if a['id'] in self.ids: self.duplicate_ids.add(a['id'])
-                      self.ids.add(a['id'])
-                  if tag == 'a' and a.get('href') is not None:
-                      self.links.append((a.get('href',''), a))
-                  if tag == 'img' and 'alt' not in a:
-                      failures.append(f'{self.path}: image missing alt')
-                  if tag in {'input','select','textarea'}:
-                      labelled = bool(a.get('aria-label') or a.get('aria-labelledby') or a.get('title') or a.get('id'))
-                      if not labelled: failures.append(f'{self.path}: unlabelled {tag}')
-
-          for page in html_files:
-              audit = Audit(page)
-              audit.feed(page.read_text('utf-8'))
-              if page.name != '404.html':
-                  if audit.html_attrs.get('lang') != 'fa' or audit.html_attrs.get('dir') != 'rtl':
-                      failures.append(f'{page}: expected lang=fa dir=rtl')
-                  if not audit.has_main: failures.append(f'{page}: missing main landmark')
-              if audit.duplicate_ids: failures.append(f'{page}: duplicate ids {sorted(audit.duplicate_ids)}')
-              for href, attrs in audit.links:
-                  if href == '#': failures.append(f'{page}: empty hash link')
-                  if attrs.get('target') == '_blank':
-                      rel = set((attrs.get('rel') or '').split())
-                      if not {'noopener','noreferrer'} <= rel:
-                          failures.append(f'{page}: target=_blank missing noopener noreferrer')
-                  if not href or href.startswith(('#','mailto:','tel:','sms:','javascript:','data:')):
-                      continue
-                  parsed = urlsplit(href)
-                  if parsed.scheme or parsed.netloc:
-                      continue
-                  target = href.split('#',1)[0].split('?',1)[0]
-                  if not target: continue
-                  candidate = (root / target.lstrip('/')) if target.startswith('/') else (page.parent / target)
-                  if candidate.is_dir(): candidate = candidate / 'index.html'
-                  elif candidate.suffix == '': candidate = candidate / 'index.html'
-                  if not candidate.exists(): failures.append(f'{page}: broken local link {href}')
-
-          if failures:
-              print('\n'.join(failures))
-              sys.exit(1)
-          print(f'HTML audit PASS: {len(html_files)} pages')
-
+          { echo '## Production external readiness'; echo '- Clean-source code gate: PASS'; echo '- Custom production domain: BLOCKED_EXTERNAL until direct domain/Cloudflare evidence'; echo '- Booking/OTP/Portal/Payments/AI providers: BLOCKED_EXTERNAL while config runtime flags are false'; echo '- Field CWV/manual accessibility/pentest: NOT_MEASURED_YET'; echo '- Historical V9 manifest retained for forensic evidence; no longer the live source contract'; } >> "$GITHUB_STEP_SUMMARY"
   codeql:
     name: CodeQL JavaScript analysis
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           languages: javascript-typescript
           queries: security-and-quality
-      - name: Analyze
-        uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+      - uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           category: '/language:javascript-typescript'

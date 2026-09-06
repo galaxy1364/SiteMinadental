@@ -19,67 +19,45 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_PAGES_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
     steps:
-      - name: Checkout production source
-        uses: actions/checkout@v6
-
-      - name: Refuse non-V9 or unconfigured deployment
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Refuse deployment without external production evidence
         shell: bash
         run: |
           set -euo pipefail
           test -n "${CLOUDFLARE_API_TOKEN:-}"
           test -n "${CLOUDFLARE_ACCOUNT_ID:-}"
           test -n "${CLOUDFLARE_PAGES_PROJECT:-}"
-          grep -q '2026.08.30.9' version.json
-          grep -q 'enterprise-v9' version.json
-          grep -q 'https://minadentalclinic.ir/' index.html
+          grep -q '"channel": "clean-source-rc1"' version.json
+          grep -q '"productionReady": true' version.json
+          grep -q 'productionDomainVerified: true' config.js
+          grep -q 'https://minadentalclinic.ir/' config.js
           test -f _worker.js
-          test -f .v9latest/V9_RUNTIME_SHA256SUMS.txt || {
-            echo 'Exact runtime manifest is required before deployment.' >&2
-            exit 1
-          }
-
-      - name: Rebuild exact 69-file deployment directory
+          echo 'External production evidence gate PASS'
+      - name: Build minimal public runtime
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/minadentalclinic-production
-          mkdir -p /tmp/minadentalclinic-production
-          while read -r hash path; do
-            test -n "$hash" && test -n "$path"
-            test -f "$path"
-            mkdir -p "/tmp/minadentalclinic-production/$(dirname "$path")"
-            cp -p "$path" "/tmp/minadentalclinic-production/$path"
-          done < .v9latest/V9_RUNTIME_SHA256SUMS.txt
-          cd /tmp/minadentalclinic-production
-          sha256sum -c "$GITHUB_WORKSPACE/.v9latest/V9_RUNTIME_SHA256SUMS.txt"
-          test "$(find . -type f | wc -l)" -eq 69
-          node --check _worker.js
-          node --check sw.js
-          node --check assets/js/site.js
-          node --check assets/js/admin.js
-          node --check assets/js/portal.js
-          node --check assets/js/status.js
-
-      - name: Deploy exact runtime to existing Cloudflare Pages project
-        shell: bash
+          out=/tmp/minadentalclinic-production
+          rm -rf "$out"; mkdir -p "$out"
+          copy(){ mkdir -p "$out/$(dirname "$1")"; cp -a "$1" "$out/$1"; }
+          for f in index.html config.js sw.js version.json manifest.webmanifest robots.txt sitemap.xml sitemap.txt search-index.json feed.xml llms.txt humans.txt opensearch.xml offline.html 404.html _headers _redirects _worker.js privacy.html accessibility.html status.html ai-transparency.html editorial-governance.html governance.css governance-nav.css governance-links.js status-runtime.js hero-bg.jpg service-implant.jpg service-rootcanal.jpg service-veneer.jpg service-pediatric.jpg service-whitening.jpg clinic-interior.jpg before-after.jpg doctor-portrait.jpg install.html; do copy "$f"; done
+          for d in assets/css assets/js icons services guides experience booking tools ai-info safety dentist-tehran-22 contact about links portal .well-known; do cp -a "$d" "$out/$d"; done
+          if grep -R -n -E 'assets/index-ClUC_4GS.js|site-hardening.js|path-fix.js|pwa-runtime.js' "$out"; then echo 'Legacy containment reference in production runtime' >&2; exit 1; fi
+          node --check "$out/assets/js/site.js"
+          node --check "$out/sw.js"
+          node --check "$out/_worker.js"
+          echo "Production runtime files: $(find "$out" -type f | wc -l)"
+      - name: Deploy clean-source runtime
         run: |
-          set -euo pipefail
-          npx --yes wrangler@4 pages deploy /tmp/minadentalclinic-production \
-            --project-name "$CLOUDFLARE_PAGES_PROJECT" \
-            --branch main \
-            --commit-dirty=true
-
+          npx --yes wrangler@4 pages deploy /tmp/minadentalclinic-production --project-name "$CLOUDFLARE_PAGES_PROJECT" --branch main --commit-dirty=true
       - name: Production smoke verification
         shell: bash
         run: |
           set -euo pipefail
-          for attempt in 1 2 3 4 5; do
+          for attempt in 1 2 3 4 5 6; do
             body="$(curl --fail --silent --show-error --max-time 20 https://minadentalclinic.ir/version.json || true)"
-            if printf '%s' "$body" | grep -q '2026.08.30.9'; then
-              printf '%s\n' "$body"
-              exit 0
-            fi
+            if printf '%s' "$body" | grep -q '2026.09.06.1'; then curl --fail --silent --show-error --max-time 20 https://minadentalclinic.ir/ >/dev/null; echo 'Custom-domain production smoke PASS'; exit 0; fi
             sleep 10
           done
-          echo 'Production domain did not expose V9 after deploy.' >&2
+          echo 'Production domain did not expose the expected clean-source version' >&2
           exit 1

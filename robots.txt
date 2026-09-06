@@ -1,3 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /admin.html
+
 Sitemap: https://galaxy1364.github.io/SiteMinadental/sitemap.xml

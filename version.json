@@ -1,1 +1,7 @@
-{"version":"2026.08.05.1","releasedAt":"2026-08-05T11:30:00Z","minimumCompatibleVersion":"2026.08.05.1","updateMode":"automatic"}
+{
+  "version": "2026.09.06.1",
+  "channel": "clean-source-rc1",
+  "releasedAt": "2026-09-06",
+  "productionReady": false,
+  "backendConnected": false
+}

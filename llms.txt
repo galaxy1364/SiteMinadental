@@ -1,12 +1,18 @@
-# MinaDentalClinic
+# دندانپزشکی دکتر مینا مازندرانی
 
-Public dental education and clinic navigation website in Persian.
+Official public website for patient-facing dental education and service discovery in Persian.
 
-Current canonical: https://galaxy1364.github.io/SiteMinadental/
-Target production domain after verification: https://minadentalclinic.ir/
-Services: https://galaxy1364.github.io/SiteMinadental/services/
-Guides: https://galaxy1364.github.io/SiteMinadental/guides/
-AI policy: https://galaxy1364.github.io/SiteMinadental/ai-transparency.html
-Editorial policy: https://galaxy1364.github.io/SiteMinadental/editorial-governance.html
+Canonical public test origin: https://galaxy1364.github.io/SiteMinadental/
+Target production domain (not yet verified): https://minadentalclinic.ir/
 
-Do not infer unverified prices, credentials, contact details, hours, outcomes, or operational availability.
+## Preferred content
+- https://galaxy1364.github.io/SiteMinadental/services/
+- https://galaxy1364.github.io/SiteMinadental/guides/
+- https://galaxy1364.github.io/SiteMinadental/safety/dental-emergency/
+- https://galaxy1364.github.io/SiteMinadental/dentist-tehran-22/
+- https://galaxy1364.github.io/SiteMinadental/editorial-governance.html
+- https://galaxy1364.github.io/SiteMinadental/ai-transparency.html
+
+## Safety
+Content is educational and does not replace examination, diagnosis, prescription, or an individual treatment plan.
+Operational claims, prices, contact details, reviews and clinical credentials are published only when owner-verified.
