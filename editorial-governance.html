@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="utf-8">
@@ -23,25 +23,17 @@
     <p class="lead">هدف این چارچوب جلوگیری از انتشار Claim پزشکی، قیمت، نتیجه درمان، تجهیزات، مدارک یا توصیه‌ای است که منبع، مسئول بازبینی یا تاریخ اعتبار آن مشخص نیست.</p>
     <div class="status-box" role="status"><strong>وضعیت فعلی:</strong> این Workflow به‌عنوان Policy اجرایی منتشر شده است؛ CMS کامل با نقش‌های Author/Medical Reviewer/Approver و audit trail سرور هنوز Production-ready محسوب نمی‌شود تا Backend و RBAC واقعی متصل و آزموده شوند.</div>
   </section>
-
-  <section class="card" aria-labelledby="workflow"><h2 id="workflow">چرخه اجباری انتشار</h2><div class="process"><div class="process-item"><h3>Author</h3><p>متن اولیه با منبع، scope و تاریخ تهیه ثبت می‌شود.</p></div><div class="process-item"><h3>Medical Review</h3><p>محتوای بالینی توسط Reviewer واجد نقش مناسب از نظر دقت، ریسک و حدود ادعا بررسی می‌شود.</p></div><div class="process-item"><h3>Truth Review</h3><p>Claimهای اختصاصی کلینیک با Owner Truth و Evidence تطبیق داده می‌شوند.</p></div><div class="process-item"><h3>Approve & Publish</h3><p>نسخه مشخص، مسئول تأیید، تاریخ انتشار و تاریخ بازبینی بعدی ثبت می‌شود.</p></div><div class="process-item"><h3>Review & Revision</h3><p>هر تغییر مهم با تاریخچه تغییر، دلیل و Reviewer جدید قابل ردیابی می‌ماند.</p></div></div></section>
-
+  <section class="card" aria-labelledby="workflow"><h2 id="workflow">چرخه اجباری انتشار</h2><div class="process"><div class="process-item"><h3>Author</h3><p>متن اولیه با منبع، scope و تاریخ تهیه ثبت می‌شود.</p></div><div class="process-item"><h3>Medical Review</h3><p>محتوای بالینی توسط Reviewer واجد نقش مناسب از نظر دقت، ریسک و حدود ادعا بررسی می‌شود.</p></div><div class="process-item"><h3>Truth Review</h3><p>Claimهای اختصاصی کلینیک با Owner Truth و Evidence تطبیق داده می‌شوند.</p></div><div class="process-item"><h3>Approve &amp; Publish</h3><p>نسخه مشخص، مسئول تأیید، تاریخ انتشار و تاریخ بازبینی بعدی ثبت می‌شود.</p></div><div class="process-item"><h3>Review &amp; Revision</h3><p>هر تغییر مهم با تاریخچه تغییر، دلیل و Reviewer جدید قابل ردیابی می‌ماند.</p></div></div></section>
   <div class="grid cols-2">
     <section class="card done" aria-labelledby="required"><h2 id="required">Metadata لازم برای محتوای پزشکی</h2><ul><li>عنوان و شناسه یکتا.</li><li>نویسنده یا مسئول تهیه محتوا.</li><li>Medical Reviewer.</li><li>تاریخ انتشار و آخرین بازبینی.</li><li>تاریخ بازبینی بعدی یا trigger بازبینی.</li><li>منابع و provenance.</li><li>سطح ریسک محتوا.</li><li>Revision history و reason for change.</li></ul></section>
-
     <section class="card blocked" aria-labelledby="blocked"><h2 id="blocked">موارد ممنوع بدون Evidence</h2><ul><li>تضمین نتیجه یا درصد موفقیت بدون منبع معتبر و scope روشن.</li><li>قیمت یا شرایط مالی غیرتأییدشده.</li><li>مدرک، عنوان حرفه‌ای، تجهیزات یا برند درمانی بدون سند.</li><li>Before/After بدون consent قابل اثبات.</li><li>Review یا Rating ساختگی.</li><li>ادعای «بهترین»، «رتبه اول» یا مشابه بدون معیار مستقل و قابل ممیزی.</li></ul></section>
   </div>
-
   <section class="card info" aria-labelledby="risk"><h2 id="risk">طبقه‌بندی ریسک محتوا</h2><dl><dt>Low</dt><dd>Navigation، معرفی عمومی و اطلاعات غیرپزشکی با ریسک پایین.</dd><dt>Moderate</dt><dd>توضیح خدمات و آموزش عمومی که می‌تواند بر تصمیم بیمار اثر بگذارد.</dd><dt>High</dt><dd>علائم، اورژانس، دارو، contraindication، ریسک جراحی، نتیجه درمان یا هر محتوایی که تأخیر/تصمیم اشتباه می‌تواند آسیب ایجاد کند. این سطح نیازمند بازبینی پزشکی صریح و محافظه‌کارانه است.</dd></dl></section>
-
   <div class="grid cols-2">
     <section class="card" aria-labelledby="freshness"><h2 id="freshness">Freshness و Triggerهای بازبینی</h2><ul><li>تغییر استاندارد حرفه‌ای یا guideline.</li><li>تغییر Provider، تجهیزات، ساعات، قیمت یا سیاست کلینیک.</li><li>گزارش خطای پزشکی یا شکایت معتبر درباره محتوا.</li><li>تغییر مدل AI یا corpus مورد استفاده برای پاسخ‌گویی.</li><li>انقضای review date تعیین‌شده.</li></ul></section>
-
     <section class="card pending" aria-labelledby="backend"><h2 id="backend">Backend Gap</h2><p>برای تبدیل این Policy به CMS Enterprise واقعی هنوز RBAC، immutable audit log، approval state machine، versioned content store و publish rollback روی Backend لازم است. تا آن زمان انتشار محتوای حساس باید با فرآیند دستی مستند کنترل شود.</p></section>
   </div>
-
   <section class="card" aria-labelledby="correction"><h2 id="correction">Correction Policy</h2><p>اگر محتوای پزشکی اشتباه یا گمراه‌کننده کشف شود، اولویت با کاهش ریسک کاربر است: اصلاح یا unpublish سریع، ثبت دلیل تغییر، بازبینی پزشکی مجدد و جلوگیری از بازگشت نسخه معیوب. تغییرات نباید بی‌ردپا overwrite شوند.</p></section>
-
   <div class="links"><a class="pill-link" href="./status.html">وضعیت قابلیت‌ها</a><a class="pill-link" href="./ai-transparency.html">شفافیت AI</a><a class="pill-link" href="./privacy.html">حریم خصوصی</a></div>
 </main>
 <footer><div class="wrap">این صفحه Policy اجرایی محتواست؛ گواهی یا ادعای انطباق قانونی/پزشکی مستقل ایجاد نمی‌کند.</div></footer>
