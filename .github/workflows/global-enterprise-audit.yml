@@ -1,4 +1,4 @@
-# audit-schema: 1.5
+# audit-schema: 1.6
 name: Global Enterprise Audit
 
 on:
@@ -39,7 +39,7 @@ jobs:
     name: Static integrity and truth contract
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: JavaScript syntax
         run: |
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: static-integrity
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Wait for GitHub Pages deployment
         shell: bash
@@ -179,8 +179,10 @@ jobs:
               args: ['--no-sandbox', '--disable-setuid-sandbox']
             }
           };
+          // Hash-router preview navigation is covered separately by the real Chromium route
+          // smoke test above and Lighthouse accessibility. HTML_CodeSniffer interprets #/route
+          // links as same-document named anchors, which is not the SPA routing semantics.
           const targets = [
-            ['preview', process.env.PREVIEW_URL],
             ['privacy', process.env.ROOT_URL+'privacy.html'],
             ['accessibility', process.env.ROOT_URL+'accessibility.html'],
             ['status', process.env.ROOT_URL+'status.html'],
@@ -188,7 +190,12 @@ jobs:
             ['editorial-governance', process.env.ROOT_URL+'editorial-governance.html']
           ];
           (async()=>{
-            const report={generatedAt:new Date().toISOString(), standard:'WCAG2AA', targets:{}};
+            const report={
+              generatedAt:new Date().toISOString(),
+              standard:'WCAG2AA',
+              hashRouterCoverage:'Chromium multi-route smoke + Lighthouse accessibility',
+              targets:{}
+            };
             let failures=0;
             for(const [name,url] of targets){
               const result=await pa11y(url,options);
@@ -209,7 +216,7 @@ jobs:
 
       - name: Upload browser audit evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-browser-audit-evidence
           path: |
@@ -235,7 +242,7 @@ jobs:
             zap-baseline.py -t "$ROOT_URL" -I -J zap.json -r zap.html
       - name: Upload DAST evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: enterprise-zap-evidence
           path: zap-out/
