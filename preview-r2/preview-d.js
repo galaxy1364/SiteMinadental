@@ -126,4 +126,8 @@
   const bar=document.querySelector('.previewbar'); if(bar) bar.appendChild(auditLink);
   addEventListener('hashchange',()=>setTimeout(renderAuditIfNeeded,0));
   setTimeout(renderAuditIfNeeded,0);
+
+  // All deferred route scripts before this file have completed. Reveal the footer only after
+  // the initial application shell has been rendered so it cannot become a visible CLS victim.
+  requestAnimationFrame(() => document.body.classList.add('preview-ready'));
 })();
