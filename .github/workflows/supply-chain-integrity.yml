@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Build audited public snapshot
         shell: python
@@ -106,7 +106,7 @@ jobs:
           (cd supply-chain/public-snapshot && sha256sum -c ../SHA256SUMS.txt)
 
       - name: Generate SPDX JSON SBOM
-        uses: anchore/sbom-action@v0.24.0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           path: ./supply-chain/public-snapshot
           format: spdx-json
@@ -131,18 +131,18 @@ jobs:
           PY
 
       - name: Attest build provenance
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: supply-chain/site-public-snapshot.tar.gz
 
       - name: Attest SBOM
-        uses: actions/attest@v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: supply-chain/site-public-snapshot.tar.gz
           sbom-path: supply-chain/sbom.spdx.json
 
       - name: Upload immutable evidence bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: supply-chain-integrity-${{ github.sha }}
           retention-days: 30
