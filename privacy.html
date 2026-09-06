@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="utf-8">
@@ -24,20 +24,13 @@
     <div class="status-box" role="status"><strong>وضعیت فعلی:</strong> فرم‌های رزرو و تماس در Root عمومی به Backend عملیاتی متصل نیستند و نباید ثبت موفق نوبت یا پیام را القا کنند.</div>
     <p class="meta">آخرین بازبینی: ۶ سپتامبر ۲۰۲۶</p>
   </section>
-
   <div class="grid">
     <section class="card done" aria-labelledby="current"><h2 id="current">۱. نسخه عمومی فعلی چه داده‌ای پردازش می‌کند؟</h2><p>صفحه اصلی در وضعیت فعلی برای معرفی و تجربه کاربری عمومی است. لایه Hardening ارسال خودکار اطلاعات فرم نوبت/تماس به کانال‌های تأییدنشده را متوقف می‌کند. اگر کاربر فرمی را تکمیل کند، رابط باید صریحاً اعلام کند که داده ثبت یا ارسال نشده است.</p></section>
-
     <section class="card done" aria-labelledby="local"><h2 id="local">۲. ذخیره‌سازی محلی و PWA</h2><ul><li>داده فرم‌ها به‌صورت پیش‌فرض در <code>sessionStorage</code> نگهداری نمی‌شود.</li><li>فقط فیلدی که صریحاً برای نگهداری غیرحساس علامت‌گذاری شده باشد می‌تواند در چرخه به‌روزرسانی PWA حفظ شود.</li><li>Service Worker برای محتوای عمومی استفاده می‌شود؛ مسیرهای <code>/api/</code>، <code>/portal/</code> و <code>/admin/</code> نباید از Cache عمومی یا Offline fallback سرو شوند.</li><li>فایل پیکربندی عمومی Owner Truth و فایل‌های نسخه/Service Worker نباید با نسخه قدیمی Cache شوند.</li></ul></section>
-
     <section class="card pending" aria-labelledby="future"><h2 id="future">۳. سرویس‌های آینده و داده‌های پزشکی</h2><p>My Mina، OTP، رزرو واقعی، مشاوره، آپلود فایل، پرداخت، اعلان Push و سایر مسیرهای عملیاتی تا اتصال و آزمون Backend/Provider واقعی «فعال» محسوب نمی‌شوند. پیش از فعال‌سازی باید حداقل مالکیت داده، سطح دسترسی، نگهداری، حذف، بازیابی، ثبت رویداد، محدودیت دسترسی و مسیر پاسخ به درخواست‌های کاربر مشخص شود.</p></section>
-
     <section class="card" aria-labelledby="third"><h2 id="third">۴. سرویس‌دهندگان ثالث</h2><p>هیچ ارائه‌دهنده‌ای صرفاً به‌دلیل آماده بودن کد، «فعال» فرض نمی‌شود. Supabase، سرویس OTP/SMS، درگاه پرداخت، Turnstile، سرویس‌های نقشه، Analytics، Push و AI فقط پس از تنظیم واقعی، بررسی تنظیمات حریم خصوصی و تست مسیر رفت‌وبرگشت داده می‌توانند در نسخه عملیاتی فعال شوند.</p></section>
-
     <section class="card" aria-labelledby="claims"><h2 id="claims">۵. ادعاهای حقوقی و انطباق</h2><p>این وب‌سایت در وضعیت فعلی ادعای دریافت گواهی یا انطباق کامل با GDPR، HIPAA یا چارچوب حقوقی مشخص دیگری ندارد. هر ادعای انطباق باید بر اساس دامنه واقعی پردازش داده، محل استقرار، ارائه‌دهندگان، قراردادها و ارزیابی حقوقی/فنی معتبر باشد.</p></section>
-
     <section class="card" aria-labelledby="rights"><h2 id="rights">۶. درخواست‌های مرتبط با داده</h2><p>تا زمانی که Backend بیمار عملیاتی نشده، این صفحه نباید وجود رکورد پزشکی Production را القا کند. هنگام فعال‌شدن سامانه بیمار، مسیر واقعی درخواست مشاهده، اصلاح، دریافت، محدودسازی یا حذف داده—در حدی که قوانین و الزامات نگهداری اجازه می‌دهد—باید در همین صفحه منتشر و قابل پیگیری شود.</p></section>
-
     <section class="card" aria-labelledby="changes"><h2 id="changes">۷. تغییرات این سیاست</h2><p>با فعال‌شدن هر Provider یا قابلیت داده‌محور، این صفحه باید هم‌زمان با Release همان قابلیت بازبینی شود. متن سیاست نباید از رفتار واقعی کد و زیرساخت عقب بماند.</p></section>
   </div>
   <div class="links"><a class="pill-link" href="./status.html">وضعیت قابلیت‌ها</a><a class="pill-link" href="./accessibility.html">دسترس‌پذیری</a><a class="pill-link" href="./ai-transparency.html">شفافیت AI</a></div>
