@@ -21,6 +21,7 @@ on:
       - 'assets/css/site.css'
       - 'assets/js/site.js'
       - 'sw.js'
+      - 'version.json'
       - 'manifest.webmanifest'
       - 'sitemap.xml'
       - '.github/scripts/lighthouse-median.cjs'
@@ -48,15 +49,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for i in {1..36}; do
+          for i in {1..48}; do
             ok=1
-            curl -fsSL -o /tmp/root.html "${ROOT_URL}?audit=${GITHUB_SHA}" || ok=0
-            curl -fsSL -o /tmp/services.html "${ROOT_URL}services/?audit=${GITHUB_SHA}" || ok=0
-            curl -fsSL -o /tmp/site.js "${ROOT_URL}assets/js/site.js?audit=${GITHUB_SHA}" || ok=0
-            if [ "$ok" -eq 1 ] && cmp -s index.html /tmp/root.html && cmp -s services/index.html /tmp/services.html && cmp -s assets/js/site.js /tmp/site.js; then echo "Exact Pages snapshot verified for ${GITHUB_SHA}"; exit 0; fi
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/root.html "${ROOT_URL}?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/services.html "${ROOT_URL}services/?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/site.js "${ROOT_URL}assets/js/site.js?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/site.css "${ROOT_URL}assets/css/site.css?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/sw.js "${ROOT_URL}sw.js?audit=${GITHUB_SHA}" || ok=0
+            curl -fsSL -H 'Cache-Control: no-cache' -o /tmp/version.json "${ROOT_URL}version.json?audit=${GITHUB_SHA}" || ok=0
+            if [ "$ok" -eq 1 ] \
+              && cmp -s index.html /tmp/root.html \
+              && cmp -s services/index.html /tmp/services.html \
+              && cmp -s assets/js/site.js /tmp/site.js \
+              && cmp -s assets/css/site.css /tmp/site.css \
+              && cmp -s sw.js /tmp/sw.js \
+              && cmp -s version.json /tmp/version.json; then
+              echo "Exact Pages HTML/JS/CSS/SW/version snapshot verified for ${GITHUB_SHA}"
+              exit 0
+            fi
             sleep 10
           done
-          echo 'Exact GitHub Pages snapshot was not published in audit window' >&2
+          echo 'Exact GitHub Pages runtime snapshot was not published in audit window' >&2
           exit 1
       - name: Install browser audit tools
         run: |
@@ -69,7 +82,7 @@ jobs:
           cat > route-audit.cjs <<'NODE'
           const { chromium } = require('playwright');
           const routes=['','services/','services/implant/','services/oral-surgery/','services/root-canal/','services/laminate-composite/','services/pediatric/','guides/','guides/dental-pain-red-flags/','guides/child-first-dental-visit/','experience/','booking/','tools/treatment-comparison/','ai-info/','safety/dental-emergency/','dentist-tehran-22/','contact/','about/','links/','install.html','privacy.html','accessibility.html','status.html','ai-transparency.html','editorial-governance.html','portal/'];
-          (async()=>{const browser=await chromium.launch({headless:true});const failures=[];for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){const page=await browser.newPage({viewport});page.on('pageerror',e=>failures.push(`pageerror ${e.message}`));page.on('console',m=>{if(m.type()==='error')failures.push(`console ${m.text()}`)});for(const route of routes){const response=await page.goto(process.env.ROOT_URL+route,{waitUntil:'networkidle'});if(!response||response.status()>=400)failures.push(`${route}: HTTP ${response?.status()}`);const main=page.locator('main'),h1=page.locator('h1');if(await main.count()!==1)failures.push(`${route}: main count`);if(await h1.count()!==1)failures.push(`${route}: h1 count`);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2);if(overflow)failures.push(`${route}: horizontal overflow ${viewport.width}`)}await page.close()}await browser.close();if(failures.length){console.error([...new Set(failures)].join('\n'));process.exit(1)}console.log('Chromium route audit PASS')})().catch(e=>{console.error(e);process.exit(2)});
+          (async()=>{const browser=await chromium.launch({headless:true});const failures=[];for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){const page=await browser.newPage({viewport});page.on('pageerror',e=>failures.push(`pageerror ${e.message}`));page.on('console',m=>{if(m.type()==='error')failures.push(`console ${m.text()}`)});for(const route of routes){const join=route.includes('?')?'&':'?';const response=await page.goto(process.env.ROOT_URL+route+join+'audit='+process.env.GITHUB_SHA,{waitUntil:'networkidle'});if(!response||response.status()>=400)failures.push(`${route}: HTTP ${response?.status()}`);const main=page.locator('main'),h1=page.locator('h1');if(await main.count()!==1)failures.push(`${route}: main count`);if(await h1.count()!==1)failures.push(`${route}: h1 count`);const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth+2);if(overflow)failures.push(`${route}: horizontal overflow ${viewport.width}`)}await page.close()}await browser.close();if(failures.length){console.error([...new Set(failures)].join('\n'));process.exit(1)}console.log('Chromium route audit PASS')})().catch(e=>{console.error(e);process.exit(2)});
           NODE
           node route-audit.cjs
       - name: Lighthouse multi-run root
@@ -80,7 +93,9 @@ jobs:
         shell: bash
         run: |
           cat > pa11y-audit.cjs <<'NODE'
-          const pa11y=require('pa11y');const targets=['','services/','guides/','experience/','booking/','tools/treatment-comparison/','ai-info/','safety/dental-emergency/','dentist-tehran-22/','contact/'];(async()=>{let n=0;for(const route of targets){const r=await pa11y(process.env.ROOT_URL+route,{standard:'WCAG2AA',runners:['axe','htmlcs'],includeWarnings:false,includeNotices:false,chromeLaunchConfig:{args:['--no-sandbox']}});console.log(route||'root',r.issues.length);for(const i of r.issues)console.error(route,i.code,i.message,i.selector);n+=r.issues.length}if(n)process.exit(1)})().catch(e=>{console.error(e);process.exit(2)});
+          const pa11y=require('pa11y');
+          const targets=['','services/','guides/','experience/','booking/','tools/treatment-comparison/','ai-info/','safety/dental-emergency/','dentist-tehran-22/','contact/'];
+          (async()=>{let n=0;for(const route of targets){const sep=route.includes('?')?'&':'?';const url=process.env.ROOT_URL+route+sep+'wcag='+process.env.GITHUB_SHA;const r=await pa11y(url,{standard:'WCAG2AA',runners:['axe','htmlcs'],includeWarnings:false,includeNotices:false,wait:500,chromeLaunchConfig:{args:['--no-sandbox']}});console.log(route||'root',r.issues.length);for(const i of r.issues)console.error(route,i.code,i.message,i.selector);n+=r.issues.length}if(n)process.exit(1)})().catch(e=>{console.error(e);process.exit(2)});
           NODE
           node pa11y-audit.cjs
       - name: Upload browser evidence
