@@ -2,19 +2,24 @@
   'use strict';
 
   const config = {
-    schemaVersion: 1,
-    updatedAt: '2026-09-03',
+    schemaVersion: 2,
+    updatedAt: '2026-09-06',
     productionDomainTarget: 'https://minadentalclinic.ir/',
     clinic: {
       name: 'دندانپزشکی دکتر مینا مازندرانی',
       publicArea: 'تهران، منطقه ۲۲'
     },
     runtime: {
-      truthGuardVersion: '1.0.0',
+      truthGuardVersion: '1.1.0',
       operationalFormsConnected: false,
       bookingConnected: false,
       otpConnected: false,
       paymentsConnected: false,
+      patientPortalConnected: false,
+      aiConciergeConnected: false,
+      virtualVisitConnected: false,
+      recallConnected: false,
+      waitlistConnected: false,
       productionDomainVerified: false
     },
     verification: {
@@ -31,6 +36,17 @@
       pricing: false,
       reviews: false,
       beforeAfterConsent: false
+    },
+    governance: {
+      publicStatusSurface: true,
+      privacyCenter: true,
+      accessibilityStatement: true,
+      aiTransparency: true,
+      medicalEditorialPolicy: true,
+      wcagTarget: '2.2-AA',
+      asvsTarget: '5.0.0',
+      nistCsfTarget: '2.0',
+      aiRiskFramework: 'NIST-AI-600-1'
     },
     contact: {
       phone: null,
