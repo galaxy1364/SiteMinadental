@@ -1,3 +1,0 @@
-Canonical: https://galaxy1364.github.io/SiteMinadental/.well-known/security.txt
-Policy: https://galaxy1364.github.io/SiteMinadental/privacy.html
-Expires: 2027-09-06T00:00:00Z

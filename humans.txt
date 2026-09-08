@@ -1,3 +1,0 @@
-Site: MinaDentalClinic
-Language: Persian (fa-IR)
-Principles: evidence-first, privacy-by-design, accessibility, no fabricated clinical or operational claims.

@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
-<ShortName>Mina Dental</ShortName><Description>جست‌وجوی محتوای دندانپزشکی</Description>
-<InputEncoding>UTF-8</InputEncoding><Url type="text/html" template="https://galaxy1364.github.io/SiteMinadental/?q={searchTerms}"/>
-</OpenSearchDescription>
