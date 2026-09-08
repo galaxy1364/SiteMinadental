@@ -1,6 +1,6 @@
 "use strict";
 
-const APP_VERSION = "2026.08.05.3";
+const APP_VERSION = "2026.09.08.1";
 const CACHE_PREFIX = "mina-public-site";
 const STATIC_CACHE = `${CACHE_PREFIX}-static-${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}-runtime-${APP_VERSION}`;
@@ -34,6 +34,9 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  const sourceUrl = event.source?.url ? new URL(event.source.url) : null;
+  if (!sourceUrl || sourceUrl.origin !== self.location.origin) return;
+
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }

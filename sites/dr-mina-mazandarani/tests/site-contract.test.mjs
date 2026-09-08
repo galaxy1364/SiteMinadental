@@ -14,9 +14,9 @@ test("public identity, contact and exact owner map link are wired", async () => 
   assert.match(config, /\+989105306142/);
   assert.match(config, /0x3f8de56cb097914d:0xfd5e3dc570462e50/);
   assert.match(config, /wa\.me\/989105306142/);
-  assert.match(page, /waze\.com\/ul/);
-  assert.match(page, /neshan\.org\/maps/);
-  assert.match(page, /balad\.ir\/search/);
+  assert.match(page, /^const wazeUrl = `https:\/\/waze\.com\/ul\?q=\$\{routeQuery\}&navigate=yes`;$/m);
+  assert.match(page, /^const neshanUrl = `https:\/\/neshan\.org\/maps\?search=\$\{routeQuery\}`;$/m);
+  assert.match(page, /^const baladUrl = `https:\/\/balad\.ir\/search\?term=\$\{routeQuery\}`;$/m);
   assert.doesNotMatch(page, /۵۰۰۰|۹۸٪|رتبه اول|تضمین درمان/);
 });
 
@@ -44,10 +44,11 @@ test("PWA manifest and automatic update lifecycle are complete", async () => {
   assert.equal(manifest.dir, "rtl");
   assert.equal(manifest.display, "standalone");
   assert.equal(manifest.icons[0].src, "/mina-logo.jpeg");
-  assert.equal(version.version, "2026.08.05.3");
+  assert.equal(version.version, "2026.09.08.1");
   assert.match(worker, /skipWaiting/);
   assert.match(worker, /clients\.claim/);
   assert.match(worker, /networkFirst/);
+  assert.match(worker, /sourceUrl\.origin !== self\.location\.origin/);
   assert.match(client, /beforeinstallprompt/);
   assert.match(client, /serviceWorker\.register/);
   assert.match(client, /registration\.update/);

@@ -76,6 +76,26 @@
 
 ساخت رسمی و اعتبارسنجی Worker موفق؛ ESLint بدون خطا یا هشدار کد؛ diff check موفق. این شواهد اثبات اجرای فوکوس در مرورگر یا نصب روی گوشی نیستند؛ محدودیت امنیتی پیش‌نمایش قبلی و گیت موبایل برقرار است. آزمون لازم: نگه‌داشتن فوکوس روی دکمه تا آماده‌شدن، رفتن به کنترل دیگر پیش از پاسخ، تکرار درخواست و خطای مکان‌یابی، با صفحه‌کلید و صفحه‌خوان. وضعیت: ROUTE_FOCUS_SOURCE_FIXED / BUILD_LINT_PASS / BROWSER_QA_STOP_BLOCKER / NOT_PUBLISHED. نقطه ادامه: `RP-MINA-ROUTE-FOCUS-DEVICE-QA-2026-09-08`.
 
+## نگهداری سورس در GitHub — ۲۰۲۶-۰۹-۰۸
+
+با تایید صریح مالک، snapshot کامل ۴۴ فایل تحت Git از revision `2ce32ea23ed38a611fc4478eacd3c5ff4ff4f029` به مخزن `galaxy1364/SiteMinadental` منتقل شد. مقصد: `sites/dr-mina-mazandarani/` روی شاخه `transfer/work-site-20260908`؛ commit مقصد `194a46715fe8f61d64a47b7c92fd3dc8dce44b12`؛ درخواست ادغام پیش‌نویس https://github.com/galaxy1364/SiteMinadental/pull/14 . هش blob و mode هر ۴۴ فایل پس از انتقال با سورس برابر بود. همه ورودی‌های قبلی ریشه GitHub جز README که ثبت انتقال به آن افزوده شد، همان هش را دارند. هیچ فایل قبلی حذف یا runtime جایگزین نشد.
+
+این انتقال snapshot است؛ تاریخچه اصلی در مخزن Sites و تاریخچه قبلی GitHub محفوظ‌اند، اما همه commitهای Sites به GitHub وارد نشده‌اند. همگام‌سازی پس‌زمینه فعال نیست. ادامه انتقال باید همین پوشه و همان PR را با Source revision و تطبیق هش به‌روز کند. push مستقیم ریشه سورس روی main مخزن GitHub ممنوع است؛ آن مخزن runtime و governance مستقل دارد. ادغام/انتشار انجام نشده است. این ثبت محلی پس از snapshot است و جزو revision انتقال‌یافته نیست. ممنوعیت‌های داده ساختگی و گیت آزمون موبایل برقرارند.
+
+Resume: `RP-SITEMINADENTAL-WORK-SOURCE-TRANSFER-REVIEW-2026-09-08`.
+
+## ادامه پس از ادغام GitHub و رفع یافته‌های CodeQL — ۲۰۲۶-۰۹-۰۸
+
+PR شماره ۱۴ در commit ادغام `dae6d73adbd4ad70dc34308de2716d4ba64022c8` روی GitHub ادغام شده است؛ بنابراین snapshot قبلی اکنون در شاخه اصلی GitHub وجود دارد. بررسی بازخوردهای همان PR سه یافته CodeQL را نشان داد: دو الگوی regular expression بدون anchor در آزمون URL و نبود کنترل origin در message handler سرویس‌ورکر.
+
+اصلاح محدود انجام شد: تست‌های Waze، نشان و بلد اکنون کل declaration موردانتظار را با anchor بررسی می‌کنند؛ message handler فقط پیام Client هم‌مبدأ با خود سایت را می‌پذیرد؛ نسخه PWA و cache به `2026.09.08.1` با زمان انتشار ۲۰۲۶-۰۹-۰۸ ارتقا یافت. هیچ route، dependency، schema، داده بیمار، شماره تماس، مقصد نقشه یا اتصال برنامه مدیریت تغییر نکرد.
+
+شواهد قبل از انتشار: ساخت رسمی پنج‌مرحله‌ای و اعتبارسنجی ESM Worker PASS؛ هفت آزمون PASS؛ ESLint PASS؛ diff check PASS. در پیش‌نمایش ۱۳۶۳×۹۳۶، زبان `fa`، جهت `rtl` و نبود سرریز افقی تایید شد. FAQ، راهنما و پنجره نصب باز شدند؛ Escape هر دو پنجره را بست و فوکوس به کنترل آغازکننده برگشت. خطای کنسول متعلق به کد سایت مشاهده نشد؛ خطاهای موجود فقط URL افزونه مرورگر داشتند. این شواهد آزمون دستگاه موبایل، نصب واقعی PWA، permission مکان، شبکه آفلاین واقعی یا backend رزرو نیست.
+
+مرز Git: مخزن منبع Sites و مخزن GitHub دو remote مستقل‌اند. API فعلی Sites credential کوتاه‌عمر صادر می‌کند و webhook/credential پایدار برای GitHub Actions ارائه نشده است؛ بنابراین ادعای همگام‌سازی دائمی پس‌زمینه مجاز نیست. در هر batch مجاز، هر دو مقصد باید از یک revision با تطبیق فایل و hash به‌روزرسانی شوند تا منبع از بین نرود. خودکارسازی دائمی فقط پس از ارائه مسیر رسمی webhook یا credential پایدارِ حداقل‌دسترسی قابل فعال‌سازی است.
+
+وضعیت: CODEQL_FINDINGS_FIXED / BUILD_TEST_LINT_DESKTOP_QA_PASS / MOBILE_DEVICE_QA_PENDING / GITHUB_AND_SITES_SYNC_PENDING / NOT_PUBLISHED. نقطه ادامه: `RP-MINA-CODEQL-FIX-DUAL-REMOTE-SYNC-2026-09-08`.
+
 ## قابلیت‌های فعال و واقعی
 
 - رابط فارسی و RTL واکنش‌گرا با لوگوی رسمی مالک؛
