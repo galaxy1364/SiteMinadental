@@ -1,0 +1,39 @@
+{
+  "id": "/",
+  "name": "دندانپزشکی دکتر مینا مازندرانی",
+  "short_name": "مینا",
+  "description": "تماس، درخواست نوبت و مسیریابی دندانپزشکی دکتر مینا مازندرانی در منطقه ۲۲ تهران",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fcfa",
+  "theme_color": "#0a6c66",
+  "categories": ["medical", "health", "business"],
+  "icons": [
+    {
+      "src": "/mina-logo.jpeg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "درخواست نوبت",
+      "short_name": "نوبت",
+      "description": "باز کردن راه‌های دریافت نوبت",
+      "url": "/#home",
+      "icons": [{ "src": "/mina-logo.jpeg", "sizes": "1024x1024", "type": "image/jpeg" }]
+    },
+    {
+      "name": "موقعیت مطب",
+      "short_name": "مسیریابی",
+      "description": "باز کردن موقعیت مطب",
+      "url": "/#location",
+      "icons": [{ "src": "/mina-logo.jpeg", "sizes": "1024x1024", "type": "image/jpeg" }]
+    }
+  ]
+}
